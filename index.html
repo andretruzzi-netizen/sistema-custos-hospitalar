@@ -1,0 +1,2233 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema de Apuração de Custos Hospitalares</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0f1117;
+    --bg2: #161b27;
+    --bg3: #1e2535;
+    --border: #2a3347;
+    --accent: #3b82f6;
+    --accent2: #60a5fa;
+    --accent-soft: rgba(59,130,246,0.12);
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --text: #e2e8f0;
+    --text2: #94a3b8;
+    --text3: #64748b;
+    --sidebar-w: 260px;
+    --sidebar-collapsed: 64px;
+    --radius: 10px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+
+  @media (max-width: 768px) {
+    body { flex-direction: column; height: auto; min-height: 100vh; }
+    #sidebar { width: 100% !important; min-width: 100% !important; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+    #sidebar.collapsed { width: 100% !important; min-width: 100% !important; }
+    .sidebar-header { padding: 10px 14px; min-height: unset; }
+    .sidebar-nav { display: flex; flex-direction: row; padding: 6px 8px; gap: 2px; overflow-x: auto; flex: unset; }
+    .nav-section { display: flex; flex-direction: row; gap: 2px; margin-bottom: 0; }
+    .nav-label { display: none; }
+    .nav-item { padding: 7px 8px; }
+    .nav-item .label { font-size: 11px; opacity: 1 !important; }
+    .toggle-btn { display: none; }
+    #main { flex: 1; overflow: hidden; }
+    .topbar { padding: 0 12px; height: 52px; }
+    .topbar-title { font-size: 15px; }
+    .content { padding: 12px; overflow-y: auto; flex: 1; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .form-grid { grid-template-columns: 1fr !important; }
+    .form-group.full { grid-column: 1; }
+    .toolbar { gap: 6px; }
+    .search-box { min-width: 120px; }
+    .btn { padding: 7px 10px; font-size: 12px; }
+    .modal { padding: 16px; max-width: 100%; }
+    table { font-size: 12px; }
+    thead th, tbody td { padding: 7px 8px; }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Sora', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    font-size: 14px;
+  }
+
+  /* ===== SIDEBAR ===== */
+  #sidebar {
+    width: var(--sidebar-w);
+    min-width: var(--sidebar-w);
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    transition: width .3s ease, min-width .3s ease;
+    overflow: hidden;
+    position: relative;
+    z-index: 10;
+  }
+  #sidebar.collapsed { width: var(--sidebar-collapsed); min-width: var(--sidebar-collapsed); }
+
+  .sidebar-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 20px 16px;
+    border-bottom: 1px solid var(--border);
+    min-height: 72px;
+  }
+  .logo-icon {
+    width: 36px; height: 36px; min-width: 36px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .logo-text {
+    font-size: 13px; font-weight: 600; line-height: 1.3;
+    white-space: nowrap; overflow: hidden;
+    transition: opacity .2s;
+  }
+  #sidebar.collapsed .logo-text { opacity: 0; pointer-events: none; }
+
+  .toggle-btn {
+    position: absolute; right: -13px; top: 24px;
+    width: 26px; height: 26px;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 50%; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; color: var(--text2);
+    transition: background .2s, color .2s;
+    z-index: 20;
+  }
+  .toggle-btn:hover { background: var(--accent); color: #fff; }
+
+  .sidebar-nav { flex: 1; overflow-y: auto; padding: 12px 8px; }
+  .nav-section { margin-bottom: 8px; }
+  .nav-label {
+    font-size: 10px; font-weight: 600; color: var(--text3);
+    letter-spacing: .08em; text-transform: uppercase;
+    padding: 8px 8px 4px;
+    white-space: nowrap; overflow: hidden;
+    transition: opacity .2s;
+  }
+  #sidebar.collapsed .nav-label { opacity: 0; }
+
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 10px; border-radius: 8px;
+    cursor: pointer; transition: background .15s, color .15s;
+    color: var(--text2); white-space: nowrap;
+    margin-bottom: 2px;
+  }
+  .nav-item:hover { background: var(--bg3); color: var(--text); }
+  .nav-item.active { background: var(--accent-soft); color: var(--accent2); }
+  .nav-item .icon { font-size: 16px; min-width: 20px; text-align: center; }
+  .nav-item .label { font-size: 13px; font-weight: 500; overflow: hidden; transition: opacity .2s; }
+  #sidebar.collapsed .nav-item .label { opacity: 0; pointer-events: none; }
+
+  /* ===== MAIN ===== */
+  #main {
+    flex: 1; display: flex; flex-direction: column; overflow: hidden;
+  }
+
+  .topbar {
+    background: var(--bg2); border-bottom: 1px solid var(--border);
+    padding: 0 24px; height: 64px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .topbar-title { font-size: 18px; font-weight: 600; }
+  .topbar-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
+
+  .content { flex: 1; overflow-y: auto; padding: 24px; }
+
+  /* ===== CARDS / STATS ===== */
+  .stats-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap: 12px; margin-bottom: 20px; }
+  .stat-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px;
+  }
+  .stat-card .s-label { font-size: 11px; color: var(--text3); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .05em; }
+  .stat-card .s-value { font-size: 26px; font-weight: 700; color: var(--accent2); font-family: 'JetBrains Mono', monospace; }
+
+  /* ===== TOOLBAR ===== */
+  .toolbar {
+    display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; align-items: center;
+  }
+  .search-box {
+    flex: 1; min-width: 200px; max-width: 340px;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 12px;
+    color: var(--text); font-family: inherit; font-size: 13px;
+    outline: none; transition: border-color .2s;
+  }
+  .search-box:focus { border-color: var(--accent); }
+  .search-box::placeholder { color: var(--text3); }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px; border-radius: 8px; border: none;
+    font-family: inherit; font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all .15s; white-space: nowrap;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #2563eb; }
+  .btn-secondary { background: var(--bg3); color: var(--text2); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: var(--border); color: var(--text); }
+  .btn-success { background: var(--success); color: #fff; }
+  .btn-success:hover { background: #16a34a; }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-danger:hover { background: #dc2626; }
+  .btn-warning { background: var(--warning); color: #000; }
+  .btn-warning:hover { background: #d97706; }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  /* ===== TABLE ===== */
+  .table-wrap { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    background: var(--bg3); padding: 10px 14px;
+    text-align: left; font-size: 11px; font-weight: 600;
+    color: var(--text3); text-transform: uppercase; letter-spacing: .06em;
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--bg3); }
+  tbody td { padding: 10px 14px; font-size: 13px; }
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600;
+  }
+  .badge-blue { background: rgba(59,130,246,.2); color: var(--accent2); }
+  .badge-green { background: rgba(34,197,94,.2); color: #4ade80; }
+  .badge-yellow { background: rgba(245,158,11,.2); color: #fbbf24; }
+  .badge-red { background: rgba(239,68,68,.2); color: #f87171; }
+
+  .actions-cell { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  /* ===== FORM ===== */
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group.full { grid-column: 1/-1; }
+  label { font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .04em; }
+  label .req { color: var(--danger); margin-left: 2px; }
+  input, select, textarea {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 8px; padding: 9px 12px;
+    color: var(--text); font-family: inherit; font-size: 13px;
+    outline: none; transition: border-color .2s;
+    width: 100%;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  input::placeholder, textarea::placeholder { color: var(--text3); }
+  input[readonly] { opacity: .7; cursor: default; }
+  select option { background: var(--bg3); }
+
+  .form-actions {
+    display: flex; gap: 10px; justify-content: space-between; align-items: center;
+    margin-top: 20px; padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+  .form-actions .form-actions-right { display: flex; gap: 10px; }
+  .form-nav { display: flex; gap: 8px; }
+  .form-nav .btn { padding: 8px 12px; }
+
+  /* ===== PANEL ===== */
+  .panel {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px; margin-bottom: 20px;
+  }
+  .panel-title {
+    font-size: 15px; font-weight: 600; margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  /* ===== MODAL ===== */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.7);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000; padding: 20px;
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 14px; padding: 24px; width: 100%; max-width: 560px;
+    max-height: 90vh; overflow-y: auto;
+    transform: translateY(20px); transition: transform .2s;
+    box-shadow: var(--shadow);
+  }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .modal-title { font-size: 16px; font-weight: 600; }
+  .modal-close {
+    background: none; border: none; color: var(--text2);
+    font-size: 20px; cursor: pointer; padding: 4px;
+    border-radius: 6px; transition: background .15s, color .15s;
+  }
+  .modal-close:hover { background: var(--bg3); color: var(--text); }
+
+  /* ===== TOASTS ===== */
+  #toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+  .toast {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 16px;
+    display: flex; align-items: center; gap: 10px;
+    box-shadow: var(--shadow); font-size: 13px;
+    animation: slideIn .3s ease;
+    min-width: 260px; max-width: 360px;
+  }
+  .toast.success { border-left: 3px solid var(--success); }
+  .toast.error { border-left: 3px solid var(--danger); }
+  .toast.info { border-left: 3px solid var(--accent); }
+  @keyframes slideIn { from { transform: translateX(60px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+  /* ===== MISC ===== */
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--text3); }
+  .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+  .text-sm { font-size: 12px; color: var(--text3); }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .hidden { display: none !important; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+
+  .view-mode { display: block; }
+  .edit-mode { display: none; }
+  .editing .view-mode { display: none; }
+  .editing .edit-mode { display: block; }
+
+  .loading { text-align: center; padding: 40px; color: var(--text3); }
+  tbody tr { cursor: pointer; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <div class="sidebar-header">
+    <div class="logo-icon">🏥</div>
+    <div class="logo-text">Sistema de<br>Custos</div>
+    <button class="toggle-btn" onclick="toggleSidebar()" title="Recolher menu">◀</button>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-section">
+      <div class="nav-label">Principal</div>
+      <div class="nav-item active" onclick="showSection('dashboard')">
+        <span class="icon">📊</span><span class="label">Dashboard</span>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Cadastros</div>
+      <div class="nav-item" onclick="showSection('empresas')">
+        <span class="icon">🏢</span><span class="label">Empresas</span>
+      </div>
+      <div class="nav-item" onclick="showSection('cdc')">
+        <span class="icon">📁</span><span class="label">Centro de Custos</span>
+      </div>
+      <div class="nav-item" onclick="showSection('contas')">
+        <span class="icon">📒</span><span class="label">Conta Contábil</span>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Operacional</div>
+      <div class="nav-item" onclick="showSection('colaboradores')">
+        <span class="icon">👥</span><span class="label">Colaboradores</span>
+      </div>
+      <div class="nav-item" onclick="showSection('atendimentos')">
+        <span class="icon">🏨</span><span class="label">Atendimentos</span>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div id="main">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title" id="topbar-title">Dashboard</div>
+      <div class="topbar-sub" id="topbar-sub">Visão geral do sistema</div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-secondary" onclick="openExportModal()">⬇ Exportar</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div id="sec-dashboard" class="section active">
+      <div class="stats-row" id="dash-stats"></div>
+      <div class="panel">
+        <div class="panel-title">📋 Resumo do Sistema</div>
+        <p style="color:var(--text2);line-height:1.7;">Sistema de Apuração de Custos Hospitalares. Gerencie empresas, centros de custos, contas contábeis, colaboradores e atendimentos em um único lugar.</p>
+      </div>
+    </div>
+
+    <!-- EMPRESAS -->
+    <div id="sec-empresas" class="section">
+      <div class="view-mode" id="emp-view">
+        <div class="stats-row" id="emp-stats"></div>
+        <div class="toolbar">
+          <input class="search-box" type="text" placeholder="🔍 Buscar empresa..." oninput="filterTable('emp',this.value)">
+          <button class="btn btn-primary" onclick="showEmpForm()">+ Nova Empresa</button>
+          <button class="btn btn-secondary" onclick="openImportModal('empresas')">⬆ Importar</button>
+          <button class="btn btn-secondary" onclick="openExportModal('empresas')">⬇ Exportar</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Nº Reg.</th><th>Razão Social</th><th>CNPJ</th><th>Filial</th><th>Atividade</th><th>Cidade</th><th>UF</th><th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="emp-tbody"></tbody>
+          </table>
+          <div id="emp-empty" class="empty-state hidden"><div class="icon">🏢</div><p>Nenhuma empresa cadastrada</p></div>
+        </div>
+      </div>
+      <div class="edit-mode" id="emp-form-wrap">
+        <div class="panel">
+          <div class="panel-title" id="emp-form-title">➕ Nova Empresa</div>
+          <div class="form-actions" style="margin-top:0;padding-top:0;border-top:none;border-bottom:1px solid var(--border);padding-bottom:16px;margin-bottom:16px;">
+            <div class="form-nav">
+              <button class="btn btn-secondary" onclick="navRecord('emp',-1)" title="Anterior">◀</button>
+              <button class="btn btn-secondary" onclick="navRecord('emp',1)" title="Próximo">▶</button>
+            </div>
+            <div class="form-actions-right">
+              <button class="btn btn-secondary" onclick="cancelEmpForm()">Cancelar</button>
+              <button class="btn btn-primary" onclick="saveEmpresa()">💾 Salvar</button>
+            </div>
+          </div>
+          <div class="form-grid">
+            <div class="form-group"><label>Nº de Registro</label><input id="emp-nr" readonly placeholder="Automático"></div>
+            <div class="form-group"><label>Razão Social <span class="req">*</span></label><input id="emp-razao" placeholder="Nome completo da empresa"></div>
+            <div class="form-group"><label>Nome Fantasia</label><input id="emp-fantasia" placeholder="Nome fantasia"></div>
+            <div class="form-group"><label>CNPJ <span class="req">*</span></label><input id="emp-cnpj" placeholder="00.000.000/0000-00" oninput="maskCNPJ(this)"></div>
+            <div class="form-group"><label>Filial</label><select id="emp-filial"><option value="Matriz">Matriz</option><option value="Filial">Filial</option></select></div>
+            <div class="form-group"><label>Atividade</label><select id="emp-atividade"><option value="">Selecione</option><option>Hospital</option><option>Laboratório</option><option>Clínica</option><option>Ambulatório</option><option>SADT</option></select></div>
+            <div class="form-group"><label>Responsável</label><input id="emp-responsavel" placeholder="Nome do responsável"></div>
+            <div class="form-group"><label>Telefone</label><input id="emp-telefone" placeholder="(00) 00000-0000"></div>
+            <div class="form-group"><label>E-mail</label><input id="emp-email" type="email" placeholder="contato@empresa.com.br"></div>
+            <div class="form-group"><label>CEP</label><input id="emp-cep" placeholder="00000-000" oninput="maskCEP(this)" onblur="buscaCEP()"></div>
+            <div class="form-group"><label>Logradouro</label><input id="emp-logradouro" placeholder="Rua / Av."></div>
+            <div class="form-group"><label>Bairro</label><input id="emp-bairro" placeholder="Bairro"></div>
+            <div class="form-group"><label>Cidade</label><input id="emp-cidade" placeholder="Cidade"></div>
+            <div class="form-group"><label>Estado</label><select id="emp-uf">
+              <option value="">Selecione</option>
+              <option>AC</option><option>AL</option><option>AP</option><option>AM</option><option>BA</option><option>CE</option>
+              <option>DF</option><option>ES</option><option>GO</option><option>MA</option><option>MT</option><option>MS</option>
+              <option>MG</option><option>PA</option><option>PB</option><option>PR</option><option>PE</option><option>PI</option>
+              <option>RJ</option><option>RN</option><option>RS</option><option>RO</option><option>RR</option><option>SC</option>
+              <option>SP</option><option>SE</option><option>TO</option>
+            </select></div>
+            <div class="form-group full"><label>Endereço Completo</label><input id="emp-endereco" placeholder="Endereço completo (opcional)"></div>
+            <div class="form-group"><label>Criado em</label><input id="emp-criado" readonly></div>
+            <div class="form-group"><label>Atualizado em</label><input id="emp-alterado" readonly></div>
+          </div>
+          <div class="form-actions">
+            <div class="form-nav">
+              <button class="btn btn-secondary" onclick="navRecord('emp',-1)" title="Anterior">◀</button>
+              <button class="btn btn-secondary" onclick="navRecord('emp',1)" title="Próximo">▶</button>
+            </div>
+            <div class="form-actions-right">
+              <button class="btn btn-secondary" onclick="cancelEmpForm()">Cancelar</button>
+              <button class="btn btn-primary" onclick="saveEmpresa()">💾 Salvar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CDC -->
+    <div id="sec-cdc" class="section">
+      <div class="view-mode" id="cdc-view">
+        <div class="stats-row" id="cdc-stats"></div>
+        <div class="toolbar">
+          <input class="search-box" type="text" placeholder="🔍 Buscar CDC..." oninput="filterTable('cdc',this.value)">
+          <button class="btn btn-primary" onclick="showCdcForm()">+ Novo CDC</button>
+          <button class="btn btn-secondary" onclick="openImportModal('cdc')">⬆ Importar</button>
+          <button class="btn btn-secondary" onclick="openExportModal('cdc')">⬇ Exportar</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Nº</th><th>Cód. CDC</th><th>Sigla</th><th>Empresa</th><th>Grupo Serviço</th><th>Tipo</th><th>Status</th><th>Ações</th></tr>
+            </thead>
+            <tbody id="cdc-tbody"></tbody>
+          </table>
+          <div id="cdc-empty" class="empty-state hidden"><div class="icon">📁</div><p>Nenhum CDC cadastrado</p></div>
+        </div>
+      </div>
+      <div class="edit-mode" id="cdc-form-wrap">
+        <div class="panel">
+          <div class="panel-title" id="cdc-form-title">➕ Novo Centro de Custos</div>
+          <div class="form-actions" style="margin-top:0;padding-top:0;border-top:none;border-bottom:1px solid var(--border);padding-bottom:16px;margin-bottom:16px;">
+            <div class="form-nav">
+              <button class="btn btn-secondary" onclick="navRecord('cdc',-1)" title="Anterior">◀</button>
+              <button class="btn btn-secondary" onclick="navRecord('cdc',1)" title="Próximo">▶</button>
+            </div>
+            <div class="form-actions-right">
+              <button class="btn btn-secondary" onclick="cancelCdcForm()">Cancelar</button>
+              <button class="btn btn-primary" onclick="saveCdc()">💾 Salvar</button>
+            </div>
+          </div>
+          <div class="form-grid">
+            <!-- Identificação -->
+            <div class="form-group"><label>Nº de Registro</label><input id="cdc-nr" readonly></div>
+            <div class="form-group"><label>Empresa <span class="req">*</span></label><select id="cdc-empresa" onchange="onCdcEmpresaChange()"><option value="">Selecione</option></select></div>
+            <div class="form-group"><label>Código CDC <span class="req">*</span></label><input id="cdc-codigo-cdc" placeholder="Ex: 01"></div>
+            <div class="form-group"><label>Código RH</label><input id="cdc-codigo-rh" placeholder="Ex: 01"></div>
+            <div class="form-group"><label>Sigla <span class="req">*</span></label><input id="cdc-sigla" placeholder="Ex: UTI"></div>
+            <div class="form-group"><label>Centro de Custo</label><input id="cdc-centro-custo" placeholder="Descrição completa"></div>
+            <!-- Classificação -->
+            <div class="form-group"><label>Grupo de Serviços</label>
+              <select id="cdc-grupo-servico">
+                <option value="">Selecione</option>
+                <option>UTI</option><option>Internação</option><option>SADT</option>
+                <option>Laboratório</option><option>Centro Cirúrgico</option><option>Pronto Atendimento</option><option>N/A</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Grupo CDC</label>
+              <select id="cdc-grupo-cdc">
+                <option value="">Selecione</option>
+                <option>N/A</option>
+                <option>Centro Cirúrgico</option>
+                <option>Cuidados Continuados</option>
+                <option>Internação</option>
+                <option>Laboratório</option>
+                <option>Oncologia</option>
+                <option>Pronto Atendimento</option>
+                <option>SADT</option>
+                <option>Vacina</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Classificação CDC</label>
+              <select id="cdc-classificacao">
+                <option value="">Selecione</option>
+                <option>Administrativo</option>
+                <option>Apoio</option>
+                <option>Serviço</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Tipo CDC</label>
+              <select id="cdc-tipo">
+                <option value="">Selecione</option>
+                <option>Serviço</option><option>Adm/Apoio</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Unidade de Mensuração</label>
+              <select id="cdc-unidade-mensuracao">
+                <option value="">Selecione</option>
+                <option>Atendimento</option>
+                <option>Cirurgia</option>
+                <option>Consulta</option>
+                <option>Contas Faturadas</option>
+                <option>Diária</option>
+                <option>Exame</option>
+                <option>Hora</option>
+                <option>Metragem</option>
+                <option>Por Colaborador</option>
+                <option>Procedimento</option>
+                <option>Sessão</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Característica</label>
+              <select id="cdc-caracteristica">
+                <option value="">Selecione</option>
+                <option>Diária</option><option>Consulta</option><option>Procedimento</option>
+                <option>Exame</option><option>Cirurgia</option><option>Hora</option>
+              </select>
+            </div>
+            <!-- Estrutura física -->
+            <!-- Responsáveis -->
+            <div class="form-group"><label>Responsável CDC</label><input id="cdc-responsavel-cdc" placeholder="Nome do responsável"></div>
+            <div class="form-group"><label>Gerente Responsável</label><input id="cdc-gerente-responsavel" placeholder="Nome do gerente"></div>
+            <!-- Status -->
+            <div class="form-group"><label>Status CDC</label>
+              <select id="cdc-status-cdc"><option value="Ativo">Ativo</option><option value="Inativo">Inativo</option></select>
+            </div>
+            <!-- Rateio -->
+            <div class="form-group"><label>Critério Rateio</label>
+              <select id="cdc-criterio-rateio">
+                <option value="">Selecione</option>
+                <option>Diária</option><option>Consulta</option><option>Procedimento</option>
+                <option>Exame</option><option>Cirurgia</option><option>Hora</option>
+                <option>Metragem</option><option>Contas Faturadas</option><option>Por Colaborador</option>
+                <option>N/A</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Responsável Rateio</label><input id="cdc-responsavel-rateio" placeholder="Ex: N/A"></div>
+            <div class="form-group"><label>Relatório Rateio</label><input id="cdc-relatorio-rateio" placeholder="Ex: N/A"></div>
+            <div class="form-group"><label>Taxa de Ocupação Padrão (%)</label>
+              <div style="position:relative;display:flex;align-items:center;">
+                <input id="cdc-taxa-ocupacao" type="number" step="0.01" placeholder="0.00" style="padding-right:36px;">
+                <span style="position:absolute;right:12px;color:var(--text3);font-weight:600;pointer-events:none;">%</span>
+              </div>
+            </div>
+            <div class="form-group"><label>Periodicidade de Atualização (meses)</label><input id="cdc-periodicidade" type="number" placeholder="Ex: 6" oninput="calcProximaAtualizacao()"></div>
+            <div class="form-group"><label>Distribui Rateio?</label>
+              <select id="cdc-distribui-rateio"><option value="Não">Não</option><option value="Sim">Sim</option></select>
+            </div>
+            <div class="form-group"><label>Ordem Rateio</label><input id="cdc-ordem-rateio" type="number" placeholder="Ex: 1"></div>
+            <div class="form-group"><label>Status Rateio</label><input id="cdc-status-rateio" readonly placeholder="Calculado automaticamente"></div>
+            <div class="form-group"><label>Data Validação Rateio</label><input id="cdc-data-validacao-rateio" type="date" oninput="calcProximaAtualizacao()"></div>
+            <div class="form-group"><label>Data Próxima Atualização</label><input id="cdc-data-proxima-atualizacao" type="date" readonly></div>
+            <!-- Auditoria -->
+            <div class="form-group"><label>Origem (src)</label><input id="cdc-src" placeholder="manual"></div>
+            <div class="form-group full"><label>Observações <span id="cdc-obs-count" style="font-weight:400;color:var(--text3);text-transform:none;">(0/200)</span></label><textarea id="cdc-observacoes" maxlength="200" rows="3" placeholder="Observações gerais (máx. 200 caracteres)" oninput="document.getElementById('cdc-obs-count').textContent='('+this.value.length+'/200)'"></textarea></div>
+            <div class="form-group"><label>Criado em</label><input id="cdc-criado" readonly></div>
+            <div class="form-group"><label>Atualizado em</label><input id="cdc-atualizado" readonly></div>
+          </div>
+          <div id="cdc-log-panel" style="display:none;margin-top:20px;padding:16px;background:var(--bg3);border-radius:var(--radius);border:1px solid var(--border);">
+            <div style="font-size:13px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:8px;">📋 Histórico de Alterações</div>
+            <div id="cdc-log-list" style="font-size:12px;color:var(--text2);max-height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;"></div>
+          </div>
+          <div class="form-actions">
+            <div class="form-nav">
+              <button class="btn btn-secondary" onclick="navRecord('cdc',-1)" title="Anterior">◀</button>
+              <button class="btn btn-secondary" onclick="navRecord('cdc',1)" title="Próximo">▶</button>
+            </div>
+            <div class="form-actions-right">
+              <button class="btn btn-secondary" onclick="cancelCdcForm()">Cancelar</button>
+              <button class="btn btn-primary" onclick="saveCdc()">💾 Salvar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTA CONTÁBIL -->
+    <div id="sec-contas" class="section">
+      <div class="view-mode" id="conta-view">
+        <div class="stats-row" id="conta-stats"></div>
+        <div class="toolbar">
+          <input class="search-box" type="text" placeholder="🔍 Buscar conta..." oninput="filterTable('conta',this.value)">
+          <button class="btn btn-primary" onclick="showContaForm()">+ Nova Conta</button>
+          <button class="btn btn-secondary" onclick="openImportModal('contas')">⬆ Importar</button>
+          <button class="btn btn-secondary" onclick="openExportModal('contas')">⬇ Exportar</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Nº</th><th>Código</th><th>Conta Contábil</th><th>Classificação de Custo</th><th>Subclasse / Elemento (Nível 3)</th><th>Status</th><th>Ações</th></tr>
+            </thead>
+            <tbody id="conta-tbody"></tbody>
+          </table>
+          <div id="conta-empty" class="empty-state hidden"><div class="icon">📒</div><p>Nenhuma conta cadastrada</p></div>
+        </div>
+      </div>
+      <div class="edit-mode" id="conta-form-wrap">
+        <div class="panel">
+          <div class="panel-title" id="conta-form-title">➕ Nova Conta Contábil</div>
+          <div class="form-actions" style="margin-top:0;padding-top:0;border-top:none;border-bottom:1px solid var(--border);padding-bottom:16px;margin-bottom:16px;">
+            <div class="form-nav">
+              <button class="btn btn-secondary" onclick="navRecord('conta',-1)" title="Anterior">◀</button>
+              <button class="btn btn-secondary" onclick="navRecord('conta',1)" title="Próximo">▶</button>
+            </div>
+            <div class="form-actions-right">
+              <button class="btn btn-secondary" onclick="cancelContaForm()">Cancelar</button>
+              <button class="btn btn-primary" onclick="saveConta()">💾 Salvar</button>
+            </div>
+          </div>
+          <div class="form-grid">
+            <div class="form-group"><label>Nº de Registro</label><input id="conta-nr" readonly></div>
+            <div class="form-group"><label>Código <span class="req">*</span></label><input id="conta-codigo" placeholder="Ex: 3.1.1.01" oninput="maskCodigoConta(this)"></div>
+            <div class="form-group"><label>Conta Contábil <span class="req">*</span></label><input id="conta-descricao" placeholder="Descrição da conta"></div>
+            <div class="form-group"><label>Classificação de Custo</label>
+              <select id="conta-class">
+                <option value="">Selecione</option>
+                <option>Custo Direto</option><option>Custo Indireto</option>
+                <option>Despesa Administrativa</option><option>Despesa Operacional</option>
+                <option>Receita</option><option>Investimento</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Natureza</label>
+              <select id="conta-natureza">
+                <option value="">Selecione</option>
+                <option>Devedora</option><option>Credora</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Tipo</label>
+              <select id="conta-tipo">
+                <option value="">Selecione</option>
+                <option>Analítica</option><option>Sintética</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Grupo Principal (Nível 1)</label><input id="conta-grupo" placeholder="Ex: Pessoal, Material..."></div>
+            <div class="form-group"><label>Subgrupo (Nível 2)</label><input id="conta-subgrupo" placeholder="Subgrupo"></div>
+            <div class="form-group"><label>Subclasse / Elemento (Nível 3)</label><input id="conta-subclasse" placeholder="Subclasse / Elemento"></div>
+            <div class="form-group"><label>Permite Lançamento?</label>
+              <select id="conta-lancamento"><option value="Sim">Sim</option><option value="Não">Não</option></select>
+            </div>
+            <div class="form-group"><label>Rateio?</label>
+              <select id="conta-rateio"><option value="Não">Não</option><option value="Sim">Sim</option></select>
+            </div>
+            <div class="form-group"><label>Critério Rateio</label>
+              <select id="conta-criterio-rateio">
+                <option value="">Nenhum</option>
+                <option>Área</option><option>Produção</option><option>Headcount</option>
+                <option>Receita</option><option>Manual</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Indicador Financeiro</label>
+              <select id="conta-indicador">
+                <option value="">Nenhum</option>
+                <option>CMV</option><option>RDA</option><option>EBITDA</option>
+                <option>Resultado Bruto</option><option>Resultado Líquido</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Centro de Custo Padrão</label><input id="conta-cdc-pad" placeholder="Código CDC"></div>
+            <div class="form-group"><label>Status</label>
+              <select id="conta-status"><option>Ativa</option><option>Inativa</option></select>
+            </div>
+            <div class="form-group"><label>Observações</label><input id="conta-obs" placeholder="Observações"></div>
+            <div class="form-group"><label>Criado em</label><input id="conta-criado" readonly></div>
+            <div class="form-group"><label>Alterado em</label><input id="conta-alterado" readonly></div>
+          </div>
+          <div class="form-actions">
+            <div class="form-nav">
+              <button class="btn btn-secondary" onclick="navRecord('conta',-1)" title="Anterior">◀</button>
+              <button class="btn btn-secondary" onclick="navRecord('conta',1)" title="Próximo">▶</button>
+            </div>
+            <div class="form-actions-right">
+              <button class="btn btn-secondary" onclick="cancelContaForm()">Cancelar</button>
+              <button class="btn btn-primary" onclick="saveConta()">💾 Salvar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COLABORADORES -->
+    <div id="sec-colaboradores" class="section">
+      <div class="view-mode" id="colab-view">
+        <div class="stats-row" id="colab-stats"></div>
+        <div class="toolbar">
+          <input class="search-box" type="text" placeholder="🔍 Buscar colaborador..." oninput="filterTable('colab',this.value)">
+          <button class="btn btn-primary" onclick="showColabForm()">+ Novo Colaborador</button>
+          <button class="btn btn-secondary" onclick="openImportModal('colaboradores')">⬆ Importar</button>
+          <button class="btn btn-secondary" onclick="openExportModal('colaboradores')">⬇ Exportar</button>
+        </div>
+        <div class="toolbar" style="margin-top:-8px;">
+          <select id="colab-filter-mes" class="search-box" style="max-width:160px;" onchange="loadColaboradores()">
+            <option value="">Todos os meses</option>
+            <option>01</option><option>02</option><option>03</option><option>04</option>
+            <option>05</option><option>06</option><option>07</option><option>08</option>
+            <option>09</option><option>10</option><option>11</option><option>12</option>
+          </select>
+          <select id="colab-filter-ano" class="search-box" style="max-width:140px;" onchange="loadColaboradores()"></select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Nº</th><th>Centro de Custos</th><th>Cargo</th><th>Grupo Função</th><th>Empresa</th><th>Tipo Vínculo</th><th>Período</th><th>Ações</th></tr>
+            </thead>
+            <tbody id="colab-tbody"></tbody>
+          </table>
+          <div id="colab-empty" class="empty-state hidden"><div class="icon">👥</div><p>Nenhum colaborador cadastrado</p></div>
+        </div>
+      </div>
+      <div class="edit-mode" id="colab-form-wrap">
+        <div class="panel">
+          <div class="panel-title" id="colab-form-title">➕ Novo Colaborador</div>
+          <div class="form-actions" style="margin-top:0;padding-top:0;border-top:none;border-bottom:1px solid var(--border);padding-bottom:16px;margin-bottom:16px;">
+            <div class="form-nav">
+              <button class="btn btn-secondary" onclick="navRecord('colab',-1)" title="Anterior">◀</button>
+              <button class="btn btn-secondary" onclick="navRecord('colab',1)" title="Próximo">▶</button>
+            </div>
+            <div class="form-actions-right">
+              <button class="btn btn-secondary" onclick="cancelColabForm()">Cancelar</button>
+              <button class="btn btn-primary" onclick="saveColab()">💾 Salvar</button>
+            </div>
+          </div>
+          <div class="form-grid">
+            <div class="form-group"><label>Nº de Registro</label><input id="colab-nr" readonly></div>
+            <div class="form-group"><label>Período (Mês/Ano) <span class="req">*</span></label><input id="colab-periodo" type="date" onchange="syncPeriodoColab()"></div>
+            <input type="hidden" id="colab-mes">
+            <input type="hidden" id="colab-ano">
+            <div class="form-group"><label>Empresa <span class="req">*</span></label><select id="colab-empresa" onchange="loadCdcByEmpresa('colab-cdc','colab-empresa')"><option value="">Selecione</option></select></div>
+            <div class="form-group"><label>Centro de Custos <span class="req">*</span></label><select id="colab-cdc" onchange="onColabCdcChange()"><option value="">Selecione empresa</option></select></div>
+            <div class="form-group"><label>Cód. CDC</label><input id="colab-codigo-cdc" readonly placeholder="Automático"></div>
+            <div class="form-group"><label>Classificação CDC</label><input id="colab-classificacao-cdc" readonly placeholder="Automático"></div>
+            <div class="form-group"><label>Grupo CDC</label><input id="colab-grupo-cdc" readonly placeholder="Automático"></div>
+            <div class="form-group"><label>Grupo de Serviços</label><input id="colab-grupo-servico" readonly placeholder="Automático"></div>
+            <div class="form-group"><label>Código Sistema RH</label><input id="colab-codigo-rh" placeholder="Código no sistema de RH"></div>
+            <div class="form-group"><label>Código Sistema ERP</label><input id="colab-codigo-erp" placeholder="Código no sistema ERP"></div>
+            <div class="form-group"><label>Cargo</label>
+              <select id="colab-cargo">
+                <option value="">Selecione</option>
+                <option>Médico</option>
+                <option>Enfermeiro</option>
+                <option>Técnico de Enfermagem</option>
+                <option>Auxiliar de Enfermagem</option>
+                <option>Fisioterapeuta</option>
+                <option>Farmacêutico</option>
+                <option>Auxiliar de Farmácia</option>
+                <option>Nutricionista</option>
+                <option>Psicólogo</option>
+                <option>Assistente Social</option>
+                <option>Fonoaudiólogo</option>
+                <option>Técnico de Radiologia</option>
+                <option>Biomédico</option>
+                <option>Técnico de Laboratório</option>
+                <option>Bioquímico</option>
+                <option>Recepcionista</option>
+                <option>Auxiliar Administrativo</option>
+                <option>Analista Administrativo</option>
+                <option>Faturista</option>
+                <option>Auxiliar de Serviços Gerais</option>
+                <option>Técnico de Manutenção</option>
+                <option>Segurança</option>
+                <option>Gerente</option>
+                <option>Coordenador</option>
+                <option>Supervisor</option>
+                <option>Diretor</option>
+                <option>Outro</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Grupo de Função</label>
+              <select id="colab-grupo-funcao">
+                <option value="">Selecione</option>
+                <option>Farmacêutico</option>
+                <option>Técnico de Enfermagem</option>
+                <option>Enfermeiro</option>
+                <option>Psicólogo</option>
+                <option>Assistente</option>
+                <option>ADM</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Tipo de Atendimento</label>
+              <select id="colab-tipo-atendimento">
+                <option value="">Selecione</option>
+                <option>Internação</option>
+                <option>PA</option>
+                <option>CCIH</option>
+                <option>Administrativo</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Vínculo</label>
+              <select id="colab-vinculo">
+                <option value="">Selecione</option>
+                <option>CLT</option><option>PJ</option><option>Temporário</option>
+                <option>Estagiário</option><option>Terceirizado</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Tipo Vínculo</label>
+              <select id="colab-tipo-vinculo">
+                <option value="">Selecione</option>
+                <option>CLT</option><option>Aprendiz</option><option>PDC</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Salário Base (R$)</label><input id="colab-salario" type="number" step="0.01" placeholder="0,00"></div>
+            <div class="form-group"><label>Horas Mensais</label><input id="colab-horas" type="number" placeholder="0"></div>
+            <div class="form-group"><label>Admissão</label><input id="colab-admissao" type="date"></div>
+            <div class="form-group"><label>Demissão</label><input id="colab-demissao" type="date"></div>
+            <div class="form-group"><label>Status</label>
+              <select id="colab-status"><option>Ativo</option><option>Inativo</option><option>Afastado</option></select>
+            </div>
+            <div class="form-group"><label>Criado em</label><input id="colab-criado" readonly></div>
+            <div class="form-group"><label>Alterado em</label><input id="colab-alterado" readonly></div>
+          </div>
+          <div class="form-actions">
+            <div class="form-nav">
+              <button class="btn btn-secondary" onclick="navRecord('colab',-1)" title="Anterior">◀</button>
+              <button class="btn btn-secondary" onclick="navRecord('colab',1)" title="Próximo">▶</button>
+            </div>
+            <div class="form-actions-right">
+              <button class="btn btn-secondary" onclick="cancelColabForm()">Cancelar</button>
+              <button class="btn btn-primary" onclick="saveColab()">💾 Salvar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ATENDIMENTOS -->
+    <div id="sec-atendimentos" class="section">
+      <div class="view-mode" id="atend-view">
+        <div class="stats-row" id="atend-stats"></div>
+        <div class="toolbar">
+          <input class="search-box" type="text" placeholder="🔍 Buscar atendimento..." oninput="filterTable('atend',this.value)">
+          <button class="btn btn-primary" onclick="showAtendForm()">+ Novo Registro</button>
+          <button class="btn btn-secondary" onclick="openImportModal('atendimentos')">⬆ Importar</button>
+          <button class="btn btn-secondary" onclick="openExportModal('atendimentos')">⬇ Exportar</button>
+        </div>
+        <div class="toolbar" style="margin-top:-8px;">
+          <select id="atend-filter-mes" class="search-box" style="max-width:160px;" onchange="loadAtendimentos()">
+            <option value="">Todos os meses</option>
+            <option>01</option><option>02</option><option>03</option><option>04</option>
+            <option>05</option><option>06</option><option>07</option><option>08</option>
+            <option>09</option><option>10</option><option>11</option><option>12</option>
+          </select>
+          <select id="atend-filter-ano" class="search-box" style="max-width:140px;" onchange="loadAtendimentos()"></select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Nº</th><th>Empresa</th><th>CDC</th><th>Período</th><th>Cap.Instalada</th><th>Pacientes</th><th>Ocupação</th><th>Ações</th></tr>
+            </thead>
+            <tbody id="atend-tbody"></tbody>
+          </table>
+          <div id="atend-empty" class="empty-state hidden"><div class="icon">🏨</div><p>Nenhum atendimento cadastrado</p></div>
+        </div>
+      </div>
+      <div class="edit-mode" id="atend-form-wrap">
+        <div class="panel">
+          <div class="panel-title" id="atend-form-title">➕ Novo Registro de Atendimento</div>
+          <div class="form-actions" style="margin-top:0;padding-top:0;border-top:none;border-bottom:1px solid var(--border);padding-bottom:16px;margin-bottom:16px;">
+            <div class="form-nav">
+              <button class="btn btn-secondary" onclick="navRecord('atend',-1)" title="Anterior">◀</button>
+              <button class="btn btn-secondary" onclick="navRecord('atend',1)" title="Próximo">▶</button>
+            </div>
+            <div class="form-actions-right">
+              <button class="btn btn-secondary" onclick="cancelAtendForm()">Cancelar</button>
+              <button class="btn btn-primary" onclick="saveAtend()">💾 Salvar</button>
+            </div>
+          </div>
+          <div class="form-grid">
+            <div class="form-group"><label>Estabelecimento <span class="req">*</span></label><select id="atend-estabelecimento" onchange="onAtendEstabelecimentoChange()"><option value="">Selecione o estabelecimento</option></select></div>
+            <div class="form-group"><label>Empresa</label><input id="atend-empresa-info" readonly placeholder="Preenchido automaticamente"></div>
+            <div class="form-group"><label>Período (Mês/Ano) <span class="req">*</span></label><input id="atend-periodo" type="date" onchange="syncPeriodoAtend()"></div>
+            <input type="hidden" id="atend-mes">
+            <input type="hidden" id="atend-ano">
+            <input type="hidden" id="atend-empresa">
+            <input type="hidden" id="atend-cdc">
+            <div class="form-group"><label>Capacidade Instalada</label><input id="atend-cap" type="number" placeholder="0"></div>
+            <div class="form-group"><label>Leitos Disponíveis</label><input id="atend-leitos" type="number" placeholder="0"></div>
+            <div class="form-group"><label>Pacientes Atendidos</label><input id="atend-pacientes" type="number" placeholder="0"></div>
+            <div class="form-group"><label>Internações</label><input id="atend-internacoes" type="number" placeholder="0"></div>
+            <div class="form-group"><label>Consultas</label><input id="atend-consultas" type="number" placeholder="0"></div>
+            <div class="form-group"><label>Cirurgias</label><input id="atend-cirurgias" type="number" placeholder="0"></div>
+            <div class="form-group"><label>Exames</label><input id="atend-exames" type="number" placeholder="0"></div>
+            <div class="form-group"><label>Taxa Ocupação (%)</label><input id="atend-tx-ocup" type="number" step="0.01" placeholder="0.00"></div>
+            <div class="form-group"><label>Média Permanência (dias)</label><input id="atend-media-perm" type="number" step="0.01" placeholder="0.00"></div>
+            <div class="form-group"><label>Criado em</label><input id="atend-criado" readonly></div>
+            <div class="form-group"><label>Alterado em</label><input id="atend-alterado" readonly></div>
+          </div>
+          <div class="form-actions">
+            <div class="form-nav">
+              <button class="btn btn-secondary" onclick="navRecord('atend',-1)" title="Anterior">◀</button>
+              <button class="btn btn-secondary" onclick="navRecord('atend',1)" title="Próximo">▶</button>
+            </div>
+            <div class="form-actions-right">
+              <button class="btn btn-secondary" onclick="cancelAtendForm()">Cancelar</button>
+              <button class="btn btn-primary" onclick="saveAtend()">💾 Salvar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- TOAST -->
+<div id="toast-container"></div>
+
+<!-- MODAL EXPORT -->
+<div class="modal-overlay" id="modal-export">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">⬇ Exportar Dados</div>
+      <button class="modal-close" onclick="closeModal('modal-export')">✕</button>
+    </div>
+    <div class="form-group" style="margin-bottom:16px;">
+      <label>Módulo</label>
+      <select id="exp-modulo">
+        <option value="empresas">Empresas</option>
+        <option value="cdc">Centro de Custos</option>
+        <option value="contas">Conta Contábil</option>
+        <option value="colaboradores">Colaboradores</option>
+        <option value="atendimentos">Atendimentos</option>
+      </select>
+    </div>
+    <div class="form-group" style="margin-bottom:20px;">
+      <label>Formato</label>
+      <select id="exp-formato">
+        <option value="xlsx">Excel (.xlsx)</option>
+        <option value="xls">Excel 97-2003 (.xls)</option>
+        <option value="csv">CSV (.csv)</option>
+      </select>
+    </div>
+    <div class="form-actions" style="margin-top:0;padding-top:0;border:none;">
+      <button class="btn btn-secondary" onclick="closeModal('modal-export')">Cancelar</button>
+      <button class="btn btn-success" onclick="doExport()">⬇ Exportar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL IMPORT -->
+<div class="modal-overlay" id="modal-import">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">⬆ Importar Planilha</div>
+      <button class="modal-close" onclick="closeModal('modal-import')">✕</button>
+    </div>
+    <p style="color:var(--text2);margin-bottom:16px;font-size:13px;">Selecione uma planilha (.xlsx, .xls, .csv) para importar. As colunas devem corresponder aos campos do módulo.</p>
+    <div class="form-group" style="margin-bottom:16px;">
+      <label>Arquivo</label>
+      <input type="file" id="imp-file" accept=".xlsx,.xls,.csv" style="padding:8px;">
+    </div>
+    <div id="imp-preview" style="margin-bottom:16px;display:none;">
+      <div class="panel" style="max-height:200px;overflow:auto;padding:12px;">
+        <div id="imp-preview-content"></div>
+      </div>
+    </div>
+    <div id="imp-log" style="display:none;margin-bottom:16px;">
+      <div class="panel" style="max-height:150px;overflow:auto;padding:12px;border-color:var(--warning);">
+        <div id="imp-log-content" style="font-size:12px;color:var(--warning);"></div>
+      </div>
+    </div>
+    <div class="form-actions" style="margin-top:0;padding-top:0;border:none;">
+      <button class="btn btn-secondary" onclick="closeModal('modal-import')">Cancelar</button>
+      <button class="btn btn-warning" onclick="previewImport()">👁 Pré-visualizar</button>
+      <button class="btn btn-primary" id="btn-do-import" onclick="doImport()" disabled>⬆ Importar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// =============== CONFIG SUPABASE ===============
+const SB_URL = 'https://inzyaxlttsozfzwfacmz.supabase.co';
+const SB_KEY = 'sb_publishable_cDUzENyCn4ebKsM7cAFgLw_5Gn9Ty3a';
+
+const sbHeaders = {
+  'Content-Type': 'application/json',
+  'apikey': SB_KEY,
+  'Authorization': 'Bearer ' + SB_KEY,
+  'Prefer': 'return=representation'
+};
+
+async function sbGet(table, query = '') {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?${query}&order=nr_registro.asc`, { headers: sbHeaders });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+async function sbPost(table, body) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}`, {
+    method: 'POST', headers: sbHeaders, body: JSON.stringify(body)
+  });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+async function sbPatch(table, id, body) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${id}`, {
+    method: 'PATCH', headers: sbHeaders, body: JSON.stringify(body)
+  });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+async function sbDelete(table, id) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${id}`, {
+    method: 'DELETE', headers: sbHeaders
+  });
+  if (!r.ok) throw new Error(await r.text());
+}
+async function sbMaxNr(table) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?select=nr_registro&order=nr_registro.desc&limit=1`, { headers: sbHeaders });
+  const d = await r.json();
+  return d.length ? (d[0].nr_registro || 1000) : 1000;
+}
+
+// =============== UTILS ===============
+function now() { return new Date().toISOString(); }
+function fmtDate(d) {
+  if (!d) return '';
+  const num = Number(d);
+  const dt = (!isNaN(num) && num > 1000000000) ? new Date(num) : new Date(d);
+  if (isNaN(dt.getTime())) return String(d);
+  return dt.toLocaleString('pt-BR');
+}
+function fmtDateOnly(d) { if (!d) return ''; const dt = new Date(d+'T00:00:00'); return dt.toLocaleDateString('pt-BR'); }
+function padMes(m) {
+  if (m === null || m === undefined || m === '') return '';
+  return String(m).padStart(2,'0');
+}
+function fmtPeriodo(mes, ano) {
+  if (!mes || !ano) return '';
+  return '01/'+padMes(mes)+'/'+ano;
+}
+function syncPeriodoColab() {
+  const v = document.getElementById('colab-periodo').value;
+  if (!v) { document.getElementById('colab-mes').value=''; document.getElementById('colab-ano').value=''; return; }
+  const [ano, mes] = v.split('-');
+  document.getElementById('colab-mes').value = mes;
+  document.getElementById('colab-ano').value = ano;
+}
+function syncPeriodoAtend() {
+  const v = document.getElementById('atend-periodo').value;
+  if (!v) { document.getElementById('atend-mes').value=''; document.getElementById('atend-ano').value=''; return; }
+  const [ano, mes] = v.split('-');
+  document.getElementById('atend-mes').value = mes;
+  document.getElementById('atend-ano').value = ano;
+}
+function toast(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+  el.innerHTML = `<span>${icons[type]||'ℹ️'}</span><span>${msg}</span>`;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function confirm2(msg, cb) { if (confirm(msg)) cb(); }
+
+function maskCNPJ(el) {
+  let v = el.value.replace(/\D/g,'').slice(0,14);
+  v = v.replace(/^(\d{2})(\d)/,'$1.$2');
+  v = v.replace(/^(\d{2})\.(\d{3})(\d)/,'$1.$2.$3');
+  v = v.replace(/\.(\d{3})(\d)/,'.$1/$2');
+  v = v.replace(/(\d{4})(\d)/,'$1-$2');
+  el.value = v;
+}
+
+function maskCodigoConta(el) {
+  let v = el.value.replace(/\D/g,'').slice(0,7);
+  let parts = [];
+  if (v.length > 0) parts.push(v.slice(0,1));
+  if (v.length > 1) parts.push(v.slice(1,2));
+  if (v.length > 2) parts.push(v.slice(2,3));
+  if (v.length > 3) parts.push(v.slice(3,7));
+  el.value = parts.join('.');
+}
+
+function maskCEP(el) {
+  let v = el.value.replace(/\D/g,'').slice(0,8);
+  v = v.replace(/(\d{5})(\d)/,'$1-$2');
+  el.value = v;
+}
+async function buscaCEP() {
+  const cep = document.getElementById('emp-cep').value.replace(/\D/g,'');
+  if (cep.length !== 8) return;
+  try {
+    const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+    const d = await r.json();
+    if (!d.erro) {
+      document.getElementById('emp-logradouro').value = d.logradouro || '';
+      document.getElementById('emp-bairro').value = d.bairro || '';
+      document.getElementById('emp-cidade').value = d.localidade || '';
+      document.getElementById('emp-uf').value = d.uf || '';
+    }
+  } catch(e) {}
+}
+
+// =============== SIDEBAR / NAVIGATION ===============
+let sidebarCollapsed = false;
+function toggleSidebar() {
+  sidebarCollapsed = !sidebarCollapsed;
+  const sb = document.getElementById('sidebar');
+  sb.classList.toggle('collapsed', sidebarCollapsed);
+  document.querySelector('.toggle-btn').textContent = sidebarCollapsed ? '▶' : '◀';
+}
+
+const sectionMeta = {
+  dashboard: { title: 'Dashboard', sub: 'Visão geral do sistema' },
+  empresas: { title: 'Empresas', sub: 'Cadastro de empresas' },
+  cdc: { title: 'Centro de Custos', sub: 'Cadastro de centros de custo' },
+  contas: { title: 'Conta Contábil', sub: 'Plano de contas contábil' },
+  colaboradores: { title: 'Colaboradores', sub: 'Cadastro de colaboradores por período' },
+  atendimentos: { title: 'Atendimentos / Produção', sub: 'Dados de produção hospitalar por período' },
+};
+
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('sec-'+id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  event && event.currentTarget && event.currentTarget.classList.add('active');
+  const meta = sectionMeta[id] || {};
+  document.getElementById('topbar-title').textContent = meta.title || id;
+  document.getElementById('topbar-sub').textContent = meta.sub || '';
+
+  // Reload on show
+  if (id === 'dashboard') loadDashboard();
+  if (id === 'empresas') loadEmpresas();
+  if (id === 'cdc') loadCdc();
+  if (id === 'contas') loadContas();
+  if (id === 'colaboradores') loadColaboradores();
+  if (id === 'atendimentos') loadAtendimentos();
+}
+
+// Fix: set active nav on click via querySelectorAll
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', function() {
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+
+// =============== SEARCH / FILTER ===============
+let tableData = { emp: [], cdc: [], conta: [], colab: [], atend: [] };
+function filterTable(key, q) {
+  const data = tableData[key] || [];
+  const filtered = q ? data.filter(r => JSON.stringify(r).toLowerCase().includes(q.toLowerCase())) : data;
+  renderTable(key, filtered);
+}
+function renderTable(key, data) {
+  const tbodyMap = { emp:'emp-tbody', cdc:'cdc-tbody', conta:'conta-tbody', colab:'colab-tbody', atend:'atend-tbody' };
+  const emptyMap = { emp:'emp-empty', cdc:'cdc-empty', conta:'conta-empty', colab:'colab-empty', atend:'atend-empty' };
+  document.getElementById(emptyMap[key]).classList.toggle('hidden', data.length > 0);
+  const tbody = document.getElementById(tbodyMap[key]);
+  if (key === 'emp') tbody.innerHTML = data.map(r => `
+    <tr ondblclick="editEmpresa('${r.id}')" title="Duplo clique para editar">
+      <td class="mono">${r.nr_registro||''}</td>
+      <td><strong>${r.razao||''}</strong><br><span class="text-sm">${r.fantasia||''}</span></td>
+      <td class="mono">${r.cnpj||''}</td>
+      <td><span class="badge ${r.filial==='Filial'?'badge-blue':'badge-green'}">${r.filial||''}</span></td>
+      <td>${r.atividade||''}</td>
+      <td>${r.cidade||''}</td><td>${r.estado||''}</td>
+      <td><div class="actions-cell">
+        <button class="btn btn-warning btn-sm" onclick="editEmpresa('${r.id}')">✏️</button>
+      </div></td>
+    </tr>`).join('');
+  if (key === 'cdc') tbody.innerHTML = data.map(r => `
+    <tr ondblclick="editCdc('${r.id}')" title="Duplo clique para editar">
+      <td class="mono">${r.nr_registro}</td>
+      <td class="mono">${r.codigo_cdc||''}</td>
+      <td><strong>${r.sigla||''}</strong></td>
+      <td>${r.empresa_nome||''}</td>
+      <td>${r.grupo_servico||''}</td>
+      <td>${r.tipo_cdc||''}</td>
+      <td><span class="badge ${r.status_cdc==='Ativo'?'badge-green':'badge-red'}">${r.status_cdc||''}</span></td>
+      <td><div class="actions-cell">
+        <button class="btn btn-warning btn-sm" onclick="editCdc('${r.id}')">✏️</button>
+      </div></td>
+    </tr>`).join('');
+  if (key === 'conta') tbody.innerHTML = data.map(r => `
+    <tr ondblclick="editConta('${r.id}')" title="Duplo clique para editar">
+      <td class="mono">${r.nr_registro}</td>
+      <td class="mono">${r.codigo||''}</td>
+      <td>${r.descricao||''}</td>
+      <td>${r.classificacao||''}</td>
+      <td>${r.subclasse||''}</td>
+      <td><span class="badge ${r.status==='Ativa'?'badge-green':'badge-red'}">${r.status||''}</span></td>
+      <td><div class="actions-cell">
+        <button class="btn btn-warning btn-sm" onclick="editConta('${r.id}')">✏️</button>
+      </div></td>
+    </tr>`).join('');
+  if (key === 'colab') tbody.innerHTML = data.map(r => `
+    <tr ondblclick="editColab('${r.id}')" title="Duplo clique para editar">
+      <td class="mono">${r.nr_registro}</td>
+      <td><strong>${r.cdc_codigo||''}</strong></td>
+      <td>${r.cargo||''}</td>
+      <td>${r.grupo_funcao||''}</td>
+      <td>${r.empresa_nome||''}</td>
+      <td>${r.tipo_vinculo||''}</td>
+      <td>${fmtPeriodo(r.mes, r.ano)}</td>
+      <td><div class="actions-cell">
+        <button class="btn btn-warning btn-sm" onclick="editColab('${r.id}')">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteColab('${r.id}')">🗑️</button>
+      </div></td>
+    </tr>`).join('');
+  if (key === 'atend') tbody.innerHTML = data.map(r => `
+    <tr ondblclick="editAtend('${r.id}')" title="Duplo clique para editar">
+      <td class="mono">${r.nr_registro}</td>
+      <td>${r.empresa_nome||''}</td>
+      <td>${r.cdc_codigo_cdc||''}</td>
+      <td>${fmtPeriodo(r.mes, r.ano)}</td>
+      <td>${r.capacidade_instalada||0}</td>
+      <td>${r.pacientes||0}</td>
+      <td>${r.taxa_ocupacao||0}%</td>
+      <td><div class="actions-cell">
+        <button class="btn btn-warning btn-sm" onclick="editAtend('${r.id}')">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteAtend('${r.id}')">🗑️</button>
+      </div></td>
+    </tr>`).join('');
+}
+
+// =============== DASHBOARD ===============
+async function loadDashboard() {
+  try {
+    const [emp, cdc, conta, colab, atend] = await Promise.all([
+      sbGet('empresas','select=id'), sbGet('cdc','select=id'),
+      sbGet('conta_contabil','select=id'), sbGet('colaboradores','select=id'),
+      sbGet('atendimentos','select=id')
+    ]);
+    document.getElementById('dash-stats').innerHTML = `
+      <div class="stat-card"><div class="s-label">Empresas</div><div class="s-value">${emp.length}</div></div>
+      <div class="stat-card"><div class="s-label">Centros de Custo</div><div class="s-value">${cdc.length}</div></div>
+      <div class="stat-card"><div class="s-label">Contas Contábeis</div><div class="s-value">${conta.length}</div></div>
+      <div class="stat-card"><div class="s-label">Colaboradores</div><div class="s-value">${colab.length}</div></div>
+      <div class="stat-card"><div class="s-label">Atendimentos</div><div class="s-value">${atend.length}</div></div>
+    `;
+  } catch(e) { toast('Erro ao carregar dashboard: '+e.message,'error'); }
+}
+
+// =============== EMPRESAS ===============
+let empEditId = null;
+async function loadEmpresas() {
+  try {
+    const data = await sbGet('empresas');
+    tableData.emp = data;
+    renderTable('emp', data);
+    document.getElementById('emp-stats').innerHTML = `
+      <div class="stat-card"><div class="s-label">Total</div><div class="s-value">${data.length}</div></div>
+      <div class="stat-card"><div class="s-label">Matrizes</div><div class="s-value">${data.filter(r=>r.filial==='Matriz').length}</div></div>
+      <div class="stat-card"><div class="s-label">Filiais</div><div class="s-value">${data.filter(r=>r.filial==='Filial').length}</div></div>
+    `;
+  } catch(e) { toast('Erro ao carregar empresas: '+e.message,'error'); }
+}
+function showEmpForm(record = null) {
+  empEditId = record ? record.id : null;
+  document.getElementById('emp-form-title').textContent = record ? '✏️ Editar Empresa' : '➕ Nova Empresa';
+  const f = (id, val='') => { const el = document.getElementById(id); if(el) el.value = (val===null||val===undefined)?'':val; };
+  if (record) {
+    f('emp-nr', record.nr_registro); f('emp-razao', record.razao); f('emp-fantasia', record.fantasia);
+    f('emp-cnpj', record.cnpj); f('emp-filial', record.filial);
+    f('emp-atividade', record.atividade);
+    f('emp-cep', record.cep); f('emp-logradouro', record.logradouro);
+    f('emp-bairro', record.bairro); f('emp-cidade', record.cidade);
+    f('emp-uf', record.estado); f('emp-telefone', record.telefone); f('emp-email', record.email);
+    f('emp-responsavel', record.responsavel); f('emp-endereco', record.endereco);
+    f('emp-criado', fmtDate(record.criado_em)); f('emp-alterado', fmtDate(record.atualizado_em));
+  } else {
+    ['emp-nr','emp-razao','emp-fantasia','emp-cnpj','emp-cep','emp-logradouro',
+     'emp-bairro','emp-cidade','emp-uf','emp-telefone','emp-email','emp-responsavel',
+     'emp-endereco','emp-criado','emp-alterado','emp-atividade'].forEach(id=>f(id));
+    f('emp-filial','Matriz');
+  }
+  document.getElementById('sec-empresas').classList.add('editing');
+}
+function cancelEmpForm() { document.getElementById('sec-empresas').classList.remove('editing'); }
+// Regra: CNPJ pode repetir entre empresas SOMENTE se a nova/atual for Filial.
+// Se a empresa marcada como Matriz tiver o mesmo CNPJ de outra ja existente, bloqueia.
+async function checkCnpjDuplicado(cnpj, filial, ignoreId) {
+  if (!cnpj) return null;
+  try {
+    const existentes = await sbGet('empresas', `cnpj=eq.${encodeURIComponent(cnpj)}&select=id,razao,filial`);
+    const outras = existentes.filter(e => String(e.id) !== String(ignoreId||''));
+    if (!outras.length) return null;
+    if (filial === 'Matriz') {
+      return `Já existe uma empresa com este CNPJ (${outras[0].razao}). Cadastros como Matriz não podem repetir CNPJ — use Filial se for o mesmo CNPJ.`;
+    }
+    return null; // Filial: duplicidade permitida
+  } catch(e) { return null; }
+}
+async function saveEmpresa() {
+  const razao = document.getElementById('emp-razao').value.trim();
+  const cnpj = document.getElementById('emp-cnpj').value.trim();
+  const filial = document.getElementById('emp-filial').value;
+  if (!razao || !cnpj) { toast('Preencha os campos obrigatórios', 'error'); return; }
+  const erroDuplicado = await checkCnpjDuplicado(cnpj, filial, empEditId);
+  if (erroDuplicado) { toast(erroDuplicado, 'error'); return; }
+  const body = {
+    razao, fantasia: document.getElementById('emp-fantasia').value,
+    cnpj, filial: document.getElementById('emp-filial').value,
+    atividade: document.getElementById('emp-atividade').value,
+    cep: document.getElementById('emp-cep').value,
+    logradouro: document.getElementById('emp-logradouro').value,
+    bairro: document.getElementById('emp-bairro').value,
+    cidade: document.getElementById('emp-cidade').value,
+    estado: document.getElementById('emp-uf').value,
+    telefone: document.getElementById('emp-telefone').value,
+    email: document.getElementById('emp-email').value,
+    responsavel: document.getElementById('emp-responsavel').value,
+    endereco: document.getElementById('emp-endereco').value,
+    src: 'manual',
+    atualizado_em: Date.now()
+  };
+  try {
+    if (empEditId) {
+      await sbPatch('empresas', empEditId, body);
+      toast('Empresa atualizada!', 'success');
+    } else {
+      const maxNr = await sbMaxNr('empresas');
+      body.nr_registro = maxNr + 1; body.criado_em = Date.now();
+      await sbPost('empresas', body);
+      toast('Empresa cadastrada!', 'success');
+    }
+    cancelEmpForm(); loadEmpresas();
+  } catch(e) { toast('Erro ao salvar: '+e.message,'error'); }
+}
+async function editEmpresa(id) {
+  try {
+    const data = await sbGet('empresas', `id=eq.${id}`);
+    if (data[0]) showEmpForm(data[0]);
+  } catch(e) { toast('Erro ao carregar empresa','error'); }
+}
+async function deleteEmpresa(id) {
+  confirm2('Excluir esta empresa?', async () => {
+    try { await sbDelete('empresas', id); toast('Empresa excluída','success'); loadEmpresas(); }
+    catch(e) { toast('Erro ao excluir: '+e.message,'error'); }
+  });
+}
+
+// =============== CDC ===============
+let cdcEditId = null;
+async function loadCdc() {
+  try {
+    const [data, emps] = await Promise.all([sbGet('cdc'), sbGet('empresas','select=id,razao')]);
+    const empMap = {};
+    emps.forEach(e => { empMap[e.id] = e.razao; });
+    const enriched = data.map(r => ({ ...r, empresa_nome: empMap[r.empresa_id] || '' }));
+    tableData.cdc = enriched;
+    renderTable('cdc', enriched);
+    document.getElementById('cdc-stats').innerHTML = `
+      <div class="stat-card"><div class="s-label">Total CDCs</div><div class="s-value">${data.length}</div></div>
+      <div class="stat-card"><div class="s-label">Ativos</div><div class="s-value">${data.filter(r=>r.status_cdc==='Ativo').length}</div></div>
+      <div class="stat-card"><div class="s-label">Distribui Rateio</div><div class="s-value">${data.filter(r=>r.distribui_rateio==='Sim').length}</div></div>
+    `;
+  } catch(e) { toast('Erro ao carregar CDC: '+e.message,'error'); }
+}
+async function showCdcForm(record = null) {
+  cdcEditId = record ? record.id : null;
+  document.getElementById('cdc-form-title').textContent = record ? '✏️ Editar CDC' : '➕ Novo Centro de Custos';
+  try {
+    const emps = await sbGet('empresas','select=id,razao');
+    const sel = document.getElementById('cdc-empresa');
+    sel.innerHTML = '<option value="">Selecione</option>' + emps.map(e=>`<option value="${e.id}">${e.razao}</option>`).join('');
+    const f = (id, val='') => { const el = document.getElementById(id); if(el) el.value = (val===null||val===undefined)?'':val; };
+    if (record) {
+      f('cdc-nr',record.nr_registro); f('cdc-empresa',record.empresa_id);
+      f('cdc-codigo-cdc',record.codigo_cdc); f('cdc-codigo-rh',record.codigo_rh); f('cdc-sigla',record.sigla);
+f('cdc-centro-custo',record.centro_custo);
+      f('cdc-grupo-servico',record.grupo_servico); f('cdc-grupo-cdc',record.grupo_cdc);
+      f('cdc-classificacao',record.classificacao_cdc); f('cdc-tipo',record.tipo_cdc);
+      f('cdc-unidade-mensuracao',record.unidade_mensuracao); f('cdc-caracteristica',record.caracteristica);
+      f('cdc-responsavel-cdc',record.responsavel_cdc); f('cdc-gerente-responsavel',record.gerente_responsavel);
+      f('cdc-status-cdc',record.status_cdc);
+      f('cdc-criterio-rateio',record.criterio_rateio); f('cdc-responsavel-rateio',record.responsavel_rateio);
+      f('cdc-relatorio-rateio',record.relatorio_rateio); f('cdc-taxa-ocupacao',record.taxa_ocupacao);
+      f('cdc-periodicidade',record.periodicidade); f('cdc-distribui-rateio',record.distribui_rateio);
+      f('cdc-ordem-rateio',record.ordem_rateio); f('cdc-status-rateio',record.status_rateio);
+      f('cdc-data-validacao-rateio',record.data_validacao_rateio); f('cdc-data-proxima-atualizacao',record.data_proxima_atualizacao);
+      f('cdc-src',record.src); f('cdc-observacoes',record.observacoes);
+      f('cdc-criado',fmtDate(record.criado_em)); f('cdc-atualizado',fmtDate(record.atualizado_em));
+    } else {
+      ['cdc-nr','cdc-codigo-cdc','cdc-codigo-rh','cdc-sigla','cdc-centro-custo',
+       'cdc-responsavel-cdc','cdc-gerente-responsavel','cdc-qtd-colaborador',
+       'cdc-criterio-rateio','cdc-responsavel-rateio','cdc-relatorio-rateio','cdc-taxa-ocupacao',
+       'cdc-periodicidade','cdc-ordem-rateio','cdc-status-rateio','cdc-data-validacao-rateio',
+       'cdc-data-proxima-atualizacao','cdc-src',
+       'cdc-observacoes','cdc-criado','cdc-atualizado'].forEach(id=>f(id));
+      f('cdc-status-cdc','Ativo'); f('cdc-distribui-rateio','Não'); f('cdc-src','manual');
+      document.getElementById('cdc-log-panel').style.display = 'none';
+    }
+    _cdcSnap = snapshotCdcForm();
+    if (cdcEditId) loadCdcLog(cdcEditId);
+    else document.getElementById('cdc-log-panel').style.display = 'none';
+    document.getElementById('sec-cdc').classList.add('editing');
+  } catch(e) { toast('Erro ao abrir formulário CDC: '+e.message,'error'); }
+}
+function cancelCdcForm() { document.getElementById('sec-cdc').classList.remove('editing'); }
+async function saveCdc() {
+  const empresa_id = document.getElementById('cdc-empresa').value;
+  const sigla = document.getElementById('cdc-sigla').value.trim();
+  if (!empresa_id || !sigla) { toast('Preencha os campos obrigatórios (Empresa, Sigla)','error'); return; }
+  const body = {
+    empresa_id,
+    codigo_cdc: document.getElementById('cdc-codigo-cdc').value,
+    codigo_rh: document.getElementById('cdc-codigo-rh').value,
+    sigla,
+    centro_custo: document.getElementById('cdc-centro-custo').value,
+    grupo_servico: document.getElementById('cdc-grupo-servico').value,
+    grupo_cdc: document.getElementById('cdc-grupo-cdc').value,
+    classificacao_cdc: document.getElementById('cdc-classificacao').value,
+    tipo_cdc: document.getElementById('cdc-tipo').value,
+    unidade_mensuracao: document.getElementById('cdc-unidade-mensuracao').value,
+    caracteristica: document.getElementById('cdc-caracteristica').value,
+    responsavel_cdc: document.getElementById('cdc-responsavel-cdc').value,
+    gerente_responsavel: document.getElementById('cdc-gerente-responsavel').value,
+    status_cdc: document.getElementById('cdc-status-cdc').value,
+    criterio_rateio: document.getElementById('cdc-criterio-rateio').value,
+    responsavel_rateio: document.getElementById('cdc-responsavel-rateio').value,
+    relatorio_rateio: document.getElementById('cdc-relatorio-rateio').value,
+    taxa_ocupacao: document.getElementById('cdc-taxa-ocupacao').value !== '' ? parseFloat(document.getElementById('cdc-taxa-ocupacao').value) : null,
+    periodicidade: document.getElementById('cdc-periodicidade').value !== '' ? parseInt(document.getElementById('cdc-periodicidade').value) : null,
+    distribui_rateio: document.getElementById('cdc-distribui-rateio').value,
+    ordem_rateio: (function(){ const v = document.getElementById('cdc-ordem-rateio').value.trim(); return v === '' ? null : parseInt(v); })(),
+    status_rateio: document.getElementById('cdc-status-rateio').value,
+    data_validacao_rateio: document.getElementById('cdc-data-validacao-rateio').value||null,
+    data_proxima_atualizacao: document.getElementById('cdc-data-proxima-atualizacao').value||null,
+    src: document.getElementById('cdc-src').value||'manual',
+    observacoes: document.getElementById('cdc-observacoes').value,
+    atualizado_em: Date.now()
+  };
+  try {
+    if (cdcEditId) {
+      const afterSnap = snapshotCdcForm();
+      const changes = detectCdcChanges(_cdcSnap, afterSnap);
+      await sbPatch('cdc', cdcEditId, body);
+      await saveCdcLog(cdcEditId, changes);
+      toast('CDC atualizado!','success');
+      await loadCdc();
+      const updated = await sbGet('cdc', `id=eq.${cdcEditId}`);
+      if (updated[0]) showCdcForm(updated[0]);
+    } else {
+      const maxNr = await sbMaxNr('cdc');
+      body.nr_registro = maxNr + 1; body.criado_em = Date.now();
+      const created = await sbPost('cdc', body);
+      toast('CDC cadastrado!','success');
+      await loadCdc();
+      if (created && created[0]) showCdcForm(created[0]);
+      else cancelCdcForm();
+    }
+  } catch(e) { toast('Erro ao salvar: '+e.message,'error'); }
+}
+async function editCdc(id) {
+  try { const d = await sbGet('cdc',`id=eq.${id}`); if(d[0]) showCdcForm(d[0]); }
+  catch(e) { toast('Erro ao carregar CDC','error'); }
+}
+async function deleteCdc(id) {
+  confirm2('Excluir este CDC?', async () => {
+    try { await sbDelete('cdc',id); toast('CDC excluído','success'); loadCdc(); }
+    catch(e) { toast('Erro ao excluir: '+e.message,'error'); }
+  });
+}
+
+// =============== CONTA CONTÁBIL ===============
+let contaEditId = null;
+async function loadContas() {
+  try {
+    const data = await sbGet('conta_contabil');
+    tableData.conta = data;
+    renderTable('conta', data);
+    document.getElementById('conta-stats').innerHTML = `
+      <div class="stat-card"><div class="s-label">Total</div><div class="s-value">${data.length}</div></div>
+      <div class="stat-card"><div class="s-label">Ativas</div><div class="s-value">${data.filter(r=>r.status==='Ativa').length}</div></div>
+      <div class="stat-card"><div class="s-label">Com Rateio</div><div class="s-value">${data.filter(r=>r.rateio==='Sim').length}</div></div>
+    `;
+  } catch(e) { toast('Erro ao carregar contas: '+e.message,'error'); }
+}
+async function showContaForm(record = null) {
+  contaEditId = record ? record.id : null;
+  document.getElementById('conta-form-title').textContent = record ? '✏️ Editar Conta' : '➕ Nova Conta Contábil';
+  const f = (id, val='') => { const el = document.getElementById(id); if(el) el.value = (val===null||val===undefined)?'':val; };
+  if (record) {
+    f('conta-nr',record.nr_registro); f('conta-codigo',record.codigo); f('conta-descricao',record.descricao);
+    f('conta-class',record.classificacao); f('conta-natureza',record.natureza); f('conta-tipo',record.tipo);
+    f('conta-grupo',record.grupo); f('conta-subgrupo',record.subgrupo); f('conta-subclasse',record.subclasse);
+    f('conta-lancamento',record.permite_lancamento); f('conta-rateio',record.rateio);
+    f('conta-criterio-rateio',record.criterio_rateio); f('conta-indicador',record.indicador_financeiro);
+    f('conta-cdc-pad',record.cdc_padrao); f('conta-status',record.status); f('conta-obs',record.observacoes);
+    f('conta-criado',fmtDate(record.criado_em)); f('conta-alterado',fmtDate(record.alterado_em));
+  } else {
+    ['conta-nr','conta-codigo','conta-descricao','conta-grupo','conta-subgrupo','conta-subclasse',
+     'conta-cdc-pad','conta-obs','conta-criado','conta-alterado'].forEach(id=>f(id));
+    f('conta-lancamento','Sim'); f('conta-rateio','Não'); f('conta-status','Ativa');
+  }
+  document.getElementById('sec-contas').classList.add('editing');
+}
+function cancelContaForm() { document.getElementById('sec-contas').classList.remove('editing'); }
+async function saveConta() {
+  const codigo = document.getElementById('conta-codigo').value.trim();
+  const descricao = document.getElementById('conta-descricao').value.trim();
+  if (!codigo || !descricao) { toast('Preencha os campos obrigatórios','error'); return; }
+  const body = {
+    codigo, descricao, classificacao: document.getElementById('conta-class').value,
+    natureza: document.getElementById('conta-natureza').value, tipo: document.getElementById('conta-tipo').value,
+    grupo: document.getElementById('conta-grupo').value, subgrupo: document.getElementById('conta-subgrupo').value,
+    subclasse: document.getElementById('conta-subclasse').value,
+    permite_lancamento: document.getElementById('conta-lancamento').value,
+    rateio: document.getElementById('conta-rateio').value,
+    criterio_rateio: document.getElementById('conta-criterio-rateio').value,
+    indicador_financeiro: document.getElementById('conta-indicador').value,
+    cdc_padrao: document.getElementById('conta-cdc-pad').value,
+    status: document.getElementById('conta-status').value,
+    observacoes: document.getElementById('conta-obs').value,
+    alterado_em: now()
+  };
+  try {
+    if (contaEditId) {
+      await sbPatch('conta_contabil', contaEditId, body);
+      toast('Conta atualizada!','success');
+      await loadContas();
+      const updated = await sbGet('conta_contabil', `id=eq.${contaEditId}`);
+      if (updated[0]) showContaForm(updated[0]);
+    } else {
+      const maxNr = await sbMaxNr('conta_contabil');
+      body.nr_registro = maxNr + 1; body.criado_em = Date.now();
+      const created = await sbPost('conta_contabil', body);
+      toast('Conta cadastrada!','success');
+      await loadContas();
+      if (created && created[0]) showContaForm(created[0]);
+      else cancelContaForm();
+    }
+  } catch(e) { toast('Erro ao salvar: '+e.message,'error'); }
+}
+async function editConta(id) {
+  try { const d = await sbGet('conta_contabil',`id=eq.${id}`); if(d[0]) showContaForm(d[0]); }
+  catch(e) { toast('Erro ao carregar conta','error'); }
+}
+async function deleteConta(id) {
+  confirm2('Excluir esta conta?', async () => {
+    try { await sbDelete('conta_contabil',id); toast('Conta excluída','success'); loadContas(); }
+    catch(e) { toast('Erro ao excluir: '+e.message,'error'); }
+  });
+}
+
+// =============== COLABORADORES ===============
+let colabEditId = null;
+async function loadColaboradores() {
+  try {
+    const mes = document.getElementById('colab-filter-mes').value;
+    const ano = document.getElementById('colab-filter-ano').value;
+    let q = '';
+    if (mes) q += `mes=eq.${mes}&`;
+    if (ano) q += `ano=eq.${ano}&`;
+    const [data, emps, cdcs] = await Promise.all([
+      sbGet('colaboradores', q), sbGet('empresas','select=id,razao'), sbGet('cdc','select=id,codigo_cdc,sigla,centro_custo')
+    ]);
+    const empMap = {}; emps.forEach(e=>empMap[e.id]=e.razao);
+    const cdcMap = {}; cdcs.forEach(c=>cdcMap[c.id]=c.centro_custo||c.sigla||'');
+    const enriched = data.map(r=>({...r, empresa_nome: empMap[r.empresa_id]||'', cdc_codigo: cdcMap[r.cdc_id]||''}));
+    tableData.colab = enriched;
+    renderTable('colab', enriched);
+    document.getElementById('colab-stats').innerHTML = `
+      <div class="stat-card"><div class="s-label">Total</div><div class="s-value">${data.length}</div></div>
+      <div class="stat-card"><div class="s-label">Ativos</div><div class="s-value">${data.filter(r=>r.status==='Ativo').length}</div></div>
+    `;
+  } catch(e) { toast('Erro ao carregar colaboradores: '+e.message,'error'); }
+}
+async function showColabForm(record = null) {
+  colabEditId = record ? record.id : null;
+  document.getElementById('colab-form-title').textContent = record ? '✏️ Editar Colaborador' : '➕ Novo Colaborador';
+  const emps = await sbGet('empresas','select=id,razao');
+  const empSel = document.getElementById('colab-empresa');
+  empSel.innerHTML = '<option value="">Selecione</option>' + emps.map(e=>`<option value="${e.id}">${e.razao}</option>`).join('');
+  const f = (id, val='') => { const el = document.getElementById(id); if(el) el.value = (val===null||val===undefined)?'':val; };
+  if (record) {
+    f('colab-nr',record.nr_registro); f('colab-mes', padMes(record.mes)); f('colab-ano',record.ano);
+    f('colab-periodo', (record.mes && record.ano) ? (record.ano+'-'+padMes(record.mes)+'-01') : '');
+    f('colab-empresa',record.empresa_id);
+    await loadCdcByEmpresa('colab-cdc','colab-empresa');
+    f('colab-cdc',record.cdc_id);
+    f('colab-codigo-cdc',record.codigo_cdc);
+    f('colab-classificacao-cdc',record.classificacao_cdc); f('colab-grupo-cdc',record.grupo_cdc); f('colab-grupo-servico',record.grupo_servico);
+    f('colab-codigo-rh',record.codigo_sistema_rh); f('colab-codigo-erp',record.codigo_sistema_erp);
+    f('colab-cargo',record.cargo); f('colab-grupo-funcao',record.grupo_funcao); f('colab-tipo-atendimento',record.tipo_atendimento);
+    f('colab-vinculo',record.vinculo); f('colab-tipo-vinculo',record.tipo_vinculo);
+    f('colab-salario',record.salario_base); f('colab-horas',record.horas_mensais);
+    f('colab-admissao',record.data_admissao); f('colab-demissao',record.data_demissao);
+    f('colab-status',record.status); f('colab-criado',fmtDate(record.criado_em)); f('colab-alterado',fmtDate(record.atualizado_em));
+  } else {
+    ['colab-nr','colab-cargo','colab-codigo-rh','colab-codigo-erp','colab-codigo-cdc','colab-classificacao-cdc','colab-grupo-cdc',
+     'colab-grupo-servico','colab-salario','colab-horas',
+     'colab-admissao','colab-demissao','colab-criado','colab-alterado'].forEach(id=>f(id));
+    document.getElementById('colab-cdc').innerHTML = '<option value="">Selecione empresa</option>';
+    f('colab-grupo-funcao',''); f('colab-tipo-atendimento',''); f('colab-vinculo',''); f('colab-tipo-vinculo','');
+    f('colab-ano', new Date().getFullYear());
+    f('colab-mes', padMes(new Date().getMonth()+1));
+    f('colab-periodo', new Date().toISOString().slice(0,7)+'-01');
+    f('colab-status','Ativo');
+  }
+  document.getElementById('sec-colaboradores').classList.add('editing');
+}
+async function loadCdcByEmpresa(cdcSelId, empSelId) {
+  const empresaId = document.getElementById(empSelId).value;
+  const cdcSel = document.getElementById(cdcSelId);
+  cdcSel.innerHTML = '<option value="">Carregando...</option>';
+  if (!empresaId) { cdcSel.innerHTML = '<option value="">Selecione empresa</option>'; return; }
+  try {
+    const cdcs = await sbGet('cdc', `empresa_id=eq.${empresaId}&select=id,codigo_cdc,sigla,centro_custo,classificacao_cdc,grupo_cdc,grupo_servico`);
+    cdcSel.innerHTML = '<option value="">Selecione Centro de Custos</option>' + cdcs.map(c=>
+      `<option value="${c.id}" data-codigocdc="${(c.codigo_cdc||'').replace(/"/g,'&quot;')}" data-classificacao="${(c.classificacao_cdc||'').replace(/"/g,'&quot;')}" data-grupocdc="${(c.grupo_cdc||'').replace(/"/g,'&quot;')}" data-gruposervico="${(c.grupo_servico||'').replace(/"/g,'&quot;')}">${c.centro_custo||c.sigla||''}</option>`
+    ).join('');
+  } catch(e) { cdcSel.innerHTML = '<option value="">Erro ao carregar</option>'; }
+}
+function onColabCdcChange() {
+  const sel = document.getElementById('colab-cdc');
+  const opt = sel.options[sel.selectedIndex];
+  document.getElementById('colab-codigo-cdc').value = opt ? (opt.dataset.codigocdc || '') : '';
+  document.getElementById('colab-classificacao-cdc').value = opt ? (opt.dataset.classificacao || '') : '';
+  document.getElementById('colab-grupo-cdc').value = opt ? (opt.dataset.grupocdc || '') : '';
+  document.getElementById('colab-grupo-servico').value = opt ? (opt.dataset.gruposervico || '') : '';
+}
+function cancelColabForm() { document.getElementById('sec-colaboradores').classList.remove('editing'); }
+async function saveColab() {
+  syncPeriodoColab();
+  const empresa_id = document.getElementById('colab-empresa').value;
+  const cdc_id = document.getElementById('colab-cdc').value;
+  const mes = document.getElementById('colab-mes').value;
+  const ano = document.getElementById('colab-ano').value;
+  if (!empresa_id || !cdc_id || !mes || !ano) { toast('Preencha os campos obrigatórios (Empresa, Centro de Custos, Mês, Ano)','error'); return; }
+  const body = {
+    mes, ano: parseInt(ano), empresa_id, cdc_id,
+    codigo_cdc: document.getElementById('colab-codigo-cdc').value,
+    classificacao_cdc: document.getElementById('colab-classificacao-cdc').value,
+    grupo_cdc: document.getElementById('colab-grupo-cdc').value,
+    grupo_servico: document.getElementById('colab-grupo-servico').value,
+    codigo_sistema_rh: document.getElementById('colab-codigo-rh').value,
+    codigo_sistema_erp: document.getElementById('colab-codigo-erp').value,
+    cargo: document.getElementById('colab-cargo').value,
+    grupo_funcao: document.getElementById('colab-grupo-funcao').value,
+    tipo_atendimento: document.getElementById('colab-tipo-atendimento').value,
+    vinculo: document.getElementById('colab-vinculo').value,
+    tipo_vinculo: document.getElementById('colab-tipo-vinculo').value,
+    salario_base: document.getElementById('colab-salario').value !== '' ? parseFloat(document.getElementById('colab-salario').value) : null,
+    horas_mensais: document.getElementById('colab-horas').value !== '' ? parseInt(document.getElementById('colab-horas').value) : null,
+    data_admissao: document.getElementById('colab-admissao').value||null,
+    data_demissao: document.getElementById('colab-demissao').value||null,
+    status: document.getElementById('colab-status').value,
+    atualizado_em: Date.now()
+  };
+  try {
+    if (colabEditId) {
+      await sbPatch('colaboradores', colabEditId, body);
+      toast('Colaborador atualizado!','success');
+      await loadColaboradores();
+      const updated = await sbGet('colaboradores', `id=eq.${colabEditId}`);
+      if (updated[0]) showColabForm(updated[0]);
+    } else {
+      const maxNr = await sbMaxNr('colaboradores');
+      body.nr_registro = maxNr + 1; body.criado_em = Date.now();
+      const created = await sbPost('colaboradores', body);
+      toast('Colaborador cadastrado!','success');
+      await loadColaboradores();
+      if (created && created[0]) showColabForm(created[0]);
+      else cancelColabForm();
+    }
+  } catch(e) { toast('Erro ao salvar: '+e.message,'error'); }
+}
+async function editColab(id) {
+  try { const d = await sbGet('colaboradores',`id=eq.${id}`); if(d[0]) showColabForm(d[0]); }
+  catch(e) { toast('Erro ao carregar colaborador','error'); }
+}
+async function deleteColab(id) {
+  confirm2('Excluir este colaborador?', async () => {
+    try { await sbDelete('colaboradores',id); toast('Colaborador excluído','success'); loadColaboradores(); }
+    catch(e) { toast('Erro ao excluir: '+e.message,'error'); }
+  });
+}
+
+// =============== ATENDIMENTOS ===============
+let atendEditId = null;
+async function loadAtendimentos() {
+  try {
+    const mes = document.getElementById('atend-filter-mes').value;
+    const ano = document.getElementById('atend-filter-ano').value;
+    let q = '';
+    if (mes) q += `mes=eq.${mes}&`;
+    if (ano) q += `ano=eq.${ano}&`;
+    const [data, emps, cdcs] = await Promise.all([
+      sbGet('atendimentos', q), sbGet('empresas','select=id,razao'), sbGet('cdc','select=id,codigo_cdc')
+    ]);
+    const empMap = {}; emps.forEach(e=>empMap[e.id]=e.razao);
+    const cdcMap = {}; cdcs.forEach(c=>cdcMap[c.id]=c.codigo);
+    const enriched = data.map(r=>({...r, empresa_nome: empMap[r.empresa_id]||'', cdc_codigo: cdcMap[r.cdc_id]||''}));
+    tableData.atend = enriched;
+    renderTable('atend', enriched);
+    const totPac = data.reduce((s,r)=>s+(r.pacientes||0),0);
+    document.getElementById('atend-stats').innerHTML = `
+      <div class="stat-card"><div class="s-label">Registros</div><div class="s-value">${data.length}</div></div>
+      <div class="stat-card"><div class="s-label">Total Pacientes</div><div class="s-value">${totPac}</div></div>
+    `;
+  } catch(e) { toast('Erro ao carregar atendimentos: '+e.message,'error'); }
+}
+// Cache de CDCs com empresa para atendimentos
+let _cdcsCache = [];
+let _empsCache = [];
+
+async function loadEstabelecimentosAtend() {
+  const [cdcs, emps] = await Promise.all([
+    sbGet('cdc','select=id,sigla,estabelecimento,empresa_id,codigo_cdc'),
+    sbGet('empresas','select=id,razao')
+  ]);
+  _cdcsCache = cdcs;
+  _empsCache = emps;
+  const empMap = {};
+  emps.forEach(e => empMap[e.id] = e.razao);
+  const sel = document.getElementById('atend-estabelecimento');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Selecione o estabelecimento</option>' +
+    cdcs.map(c => `<option value="${c.id}" data-empresa-id="${c.empresa_id}" data-empresa-nome="${empMap[c.empresa_id]||''}">${c.sigla} — ${c.estabelecimento}</option>`).join('');
+  if (current) sel.value = current;
+}
+
+function onAtendEstabelecimentoChange() {
+  const sel = document.getElementById('atend-estabelecimento');
+  const opt = sel.options[sel.selectedIndex];
+  document.getElementById('atend-empresa').value = opt ? opt.dataset.empresaId || '' : '';
+  document.getElementById('atend-empresa-info').value = opt ? opt.dataset.empresaNome || '' : '';
+  document.getElementById('atend-cdc').value = opt ? opt.value : '';
+}
+
+async function showAtendForm(record = null) {
+  atendEditId = record ? record.id : null;
+  document.getElementById('atend-form-title').textContent = record ? '✏️ Editar Atendimento' : '➕ Novo Registro de Atendimento';
+  await loadEstabelecimentosAtend();
+  const f = (id, val='') => { const el = document.getElementById(id); if(el) el.value = (val===null||val===undefined)?'':val; };
+  if (record) {
+    // Selecionar estabelecimento pelo cdc_id salvo
+    const sel = document.getElementById('atend-estabelecimento');
+    sel.value = record.cdc_id || '';
+    onAtendEstabelecimentoChange();
+    f('atend-mes', padMes(record.mes)); f('atend-ano',record.ano);
+    f('atend-periodo', (record.mes && record.ano) ? (record.ano+'-'+padMes(record.mes)+'-01') : '');
+    f('atend-cap',record.capacidade_instalada); f('atend-leitos',record.leitos_disponiveis);
+    f('atend-pacientes',record.pacientes); f('atend-internacoes',record.internacoes);
+    f('atend-consultas',record.consultas); f('atend-cirurgias',record.cirurgias); f('atend-exames',record.exames);
+    f('atend-tx-ocup',record.taxa_ocupacao); f('atend-media-perm',record.media_permanencia);
+    f('atend-criado',fmtDate(record.criado_em)); f('atend-alterado',fmtDate(record.atualizado_em));
+  } else {
+    ['atend-cap','atend-leitos','atend-pacientes','atend-internacoes','atend-consultas',
+     'atend-cirurgias','atend-exames','atend-tx-ocup','atend-media-perm','atend-criado','atend-alterado'].forEach(id=>f(id));
+    f('atend-estabelecimento',''); f('atend-empresa-info',''); f('atend-empresa',''); f('atend-cdc','');
+    f('atend-ano',new Date().getFullYear());
+    f('atend-mes', padMes(new Date().getMonth()+1));
+    f('atend-periodo', new Date().toISOString().slice(0,7)+'-01');
+  }
+  document.getElementById('sec-atendimentos').classList.add('editing');
+}
+function cancelAtendForm() { document.getElementById('sec-atendimentos').classList.remove('editing'); }
+async function saveAtend() {
+  syncPeriodoAtend();
+  const empresa_id = document.getElementById('atend-empresa').value;
+  const cdc_id = document.getElementById('atend-cdc').value;
+  const mes = document.getElementById('atend-mes').value;
+  const ano = document.getElementById('atend-ano').value;
+  if (!empresa_id || !cdc_id || !mes || !ano) { toast('Selecione o Estabelecimento, Mês e Ano','error'); return; }
+  const body = {
+    mes, ano: parseInt(ano), empresa_id, cdc_id,
+    capacidade_instalada: document.getElementById('atend-cap').value !== '' ? parseInt(document.getElementById('atend-cap').value) : null,
+    leitos_disponiveis: document.getElementById('atend-leitos').value !== '' ? parseInt(document.getElementById('atend-leitos').value) : null,
+    pacientes: document.getElementById('atend-pacientes').value !== '' ? parseInt(document.getElementById('atend-pacientes').value) : null,
+    internacoes: document.getElementById('atend-internacoes').value !== '' ? parseInt(document.getElementById('atend-internacoes').value) : null,
+    consultas: document.getElementById('atend-consultas').value !== '' ? parseInt(document.getElementById('atend-consultas').value) : null,
+    cirurgias: document.getElementById('atend-cirurgias').value !== '' ? parseInt(document.getElementById('atend-cirurgias').value) : null,
+    exames: document.getElementById('atend-exames').value !== '' ? parseInt(document.getElementById('atend-exames').value) : null,
+    taxa_ocupacao: document.getElementById('atend-tx-ocup').value !== '' ? parseFloat(document.getElementById('atend-tx-ocup').value) : null,
+    media_permanencia: document.getElementById('atend-media-perm').value !== '' ? parseFloat(document.getElementById('atend-media-perm').value) : null,
+    atualizado_em: Date.now()
+  };
+  try {
+    if (atendEditId) {
+      await sbPatch('atendimentos', atendEditId, body);
+      toast('Registro atualizado!','success');
+      await loadAtendimentos();
+      const updated = await sbGet('atendimentos', `id=eq.${atendEditId}`);
+      if (updated[0]) showAtendForm(updated[0]);
+    } else {
+      const maxNr = await sbMaxNr('atendimentos');
+      body.nr_registro = maxNr + 1; body.criado_em = Date.now();
+      const created = await sbPost('atendimentos', body);
+      toast('Registro cadastrado!','success');
+      await loadAtendimentos();
+      if (created && created[0]) showAtendForm(created[0]);
+      else cancelAtendForm();
+    }
+  } catch(e) { toast('Erro ao salvar: '+e.message,'error'); }
+}
+async function editAtend(id) {
+  try { const d = await sbGet('atendimentos',`id=eq.${id}`); if(d[0]) showAtendForm(d[0]); }
+  catch(e) { toast('Erro ao carregar atendimento','error'); }
+}
+async function deleteAtend(id) {
+  confirm2('Excluir este registro?', async () => {
+    try { await sbDelete('atendimentos',id); toast('Registro excluído','success'); loadAtendimentos(); }
+    catch(e) { toast('Erro ao excluir: '+e.message,'error'); }
+  });
+}
+
+// =============== EXPORT ===============
+let currentExportModule = null;
+function openExportModal(mod) {
+  if (mod) document.getElementById('exp-modulo').value = mod;
+  openModal('modal-export');
+}
+// Definicao das colunas de exportacao/importacao por modulo (na ordem do formulario)
+// 'fields' = nome da coluna no banco (usado na importacao)
+// 'labels' = rotulo exibido no Excel, identico ao do formulario de cadastro
+const exportSchemas = {
+  empresas: {
+    table: 'empresas',
+    fields: ['nr_registro','razao','fantasia','cnpj','filial','atividade','responsavel','telefone','email',
+      'cep','logradouro','bairro','cidade','estado','endereco','criado_em','atualizado_em'],
+    labels: ['Nº de Registro','Razão Social','Nome Fantasia','CNPJ','Filial','Atividade','Responsável','Telefone','E-mail',
+      'CEP','Logradouro','Bairro','Cidade','Estado','Endereço Completo','Criado em','Atualizado em'],
+  },
+  cdc: {
+    table: 'cdc',
+    fields: ['nr_registro','empresa_id','empresa_nome','codigo_cdc','codigo_rh','sigla','centro_custo',
+      'grupo_servico','grupo_cdc','classificacao_cdc','tipo_cdc','unidade_mensuracao','caracteristica',
+      'responsavel_cdc','gerente_responsavel','status_cdc','criterio_rateio','responsavel_rateio',
+      'relatorio_rateio','taxa_ocupacao','periodicidade','distribui_rateio','ordem_rateio','status_rateio',
+      'data_validacao_rateio','data_proxima_atualizacao','src','observacoes','criado_em','atualizado_em'],
+    labels: ['Nº de Registro','Empresa (ID)','Empresa','Código CDC','Código RH','Sigla','Centro de Custo',
+      'Grupo de Serviços','Grupo CDC','Classificação CDC','Tipo CDC','Unidade de Mensuração','Característica',
+      'Responsável CDC','Gerente Responsável','Status CDC','Critério Rateio','Responsável Rateio',
+      'Relatório Rateio','Taxa de Ocupação Padrão (%)','Periodicidade de Atualização (meses)','Distribui Rateio?','Ordem Rateio','Status Rateio',
+      'Data Validação Rateio','Data Próxima Atualização','Origem (src)','Observações','Criado em','Atualizado em'],
+    lookups: { empresa_id: { table:'empresas', labelField:'razao', nameCol:'empresa_nome' } }
+  },
+  contas: {
+    table: 'conta_contabil',
+    fields: ['nr_registro','codigo','descricao','classificacao','natureza','tipo',
+      'grupo','subgrupo','subclasse','permite_lancamento','rateio','criterio_rateio',
+      'indicador_financeiro','cdc_padrao','status','observacoes','criado_em','alterado_em'],
+    labels: ['Nº de Registro','Código','Conta Contábil','Classificação de Custo','Natureza','Tipo',
+      'Grupo Principal (Nível 1)','Subgrupo (Nível 2)','Subclasse / Elemento (Nível 3)','Permite Lançamento?','Rateio?','Critério Rateio',
+      'Indicador Financeiro','Centro de Custo Padrão','Status','Observações','Criado em','Alterado em'],
+  },
+  colaboradores: {
+    table: 'colaboradores',
+    fields: ['nr_registro','periodo','empresa_nome','cdc_codigo','codigo_cdc','classificacao_cdc',
+      'grupo_cdc','grupo_servico','codigo_sistema_rh','codigo_sistema_erp','cargo','grupo_funcao','tipo_atendimento',
+      'vinculo','tipo_vinculo','salario_base','horas_mensais','data_admissao','data_demissao','status','criado_em','atualizado_em'],
+    labels: ['Nº de Registro','Período','Empresa','Centro de Custos','Cód. CDC','Classificação CDC',
+      'Grupo CDC','Grupo de Serviços','Código Sistema RH','Código Sistema ERP','Cargo','Grupo de Função','Tipo de Atendimento',
+      'Vínculo','Tipo Vínculo','Salário Base (R$)','Horas Mensais','Admissão','Demissão','Status','Criado em','Alterado em'],
+    lookups: {
+      empresa_id: { table:'empresas', labelField:'razao', nameCol:'empresa_nome' },
+      cdc_id: { table:'cdc', labelField:'centro_custo', nameCol:'cdc_codigo' }
+    }
+  },
+  atendimentos: {
+    table: 'atendimentos',
+    fields: ['nr_registro','periodo','empresa_nome','cdc_codigo','capacidade_instalada',
+      'leitos_disponiveis','pacientes','internacoes','consultas','cirurgias','exames','taxa_ocupacao',
+      'media_permanencia','criado_em','atualizado_em'],
+    labels: ['Nº de Registro','Período','Empresa','Estabelecimento','Capacidade Instalada',
+      'Leitos Disponíveis','Pacientes Atendidos','Internações','Consultas','Cirurgias','Exames','Taxa Ocupação (%)',
+      'Média Permanência (dias)','Criado em','Atualizado em'],
+    lookups: {
+      empresa_id: { table:'empresas', labelField:'razao', nameCol:'empresa_nome' },
+      cdc_id: { table:'cdc', labelField:'centro_custo', nameCol:'cdc_codigo' }
+    }
+  }
+};
+
+async function doExport() {
+  const mod = document.getElementById('exp-modulo').value;
+  const fmt = document.getElementById('exp-formato').value;
+  const schema = exportSchemas[mod];
+  try {
+    const data = await sbGet(schema.table);
+    // Carregar lookups (empresas, cdc) para preencher colunas de nome
+    let empMap = {}, cdcMap = {};
+    if (schema.lookups) {
+      if (schema.lookups.empresa_id) {
+        const emps = await sbGet('empresas','select=id,razao');
+        emps.forEach(e => empMap[e.id] = e.razao);
+      }
+      if (schema.lookups.cdc_id) {
+        const cdcs = await sbGet('cdc','select=id,centro_custo,sigla');
+        cdcs.forEach(c => cdcMap[c.id] = c.centro_custo || c.sigla || '');
+      }
+    }
+    // Monta linhas como arrays na ordem de schema.fields (cabecalho usa schema.labels)
+    const aoa = [schema.labels];
+    data.forEach(r => {
+      const rowArr = schema.fields.map(f => {
+        if (f === 'empresa_nome') return empMap[r.empresa_id] || '';
+        if (f === 'cdc_codigo') return cdcMap[r.cdc_id] || '';
+        if (f === 'periodo') return fmtPeriodo(r.mes, r.ano);
+        return (r[f] !== undefined && r[f] !== null) ? r[f] : '';
+      });
+      aoa.push(rowArr);
+    });
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, mod);
+    const bookType = fmt === 'csv' ? 'csv' : fmt;
+    XLSX.writeFile(wb, `${mod}_${new Date().toISOString().slice(0,10)}.${fmt}`, { bookType });
+    toast('Exportação concluída!','success');
+    closeModal('modal-export');
+  } catch(e) { toast('Erro ao exportar: '+e.message,'error'); }
+}
+
+// =============== IMPORT ===============
+let importModule = null;
+let importData = null;
+function openImportModal(mod) {
+  importModule = mod;
+  importData = null;
+  document.getElementById('imp-file').value = '';
+  document.getElementById('imp-preview').style.display = 'none';
+  document.getElementById('imp-log').style.display = 'none';
+  document.getElementById('btn-do-import').disabled = true;
+  openModal('modal-import');
+}
+function previewImport() {
+  const file = document.getElementById('imp-file').files[0];
+  if (!file) { toast('Selecione um arquivo','error'); return; }
+  const schema = exportSchemas[importModule];
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'binary' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rawRows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+      // Mapear cabecalhos amigaveis (labels) -> nomes tecnicos de coluna (fields).
+      // Se a planilha ja vier com nomes tecnicos (importacoes antigas), tambem aceita.
+      const labelToField = {};
+      if (schema) {
+        schema.labels.forEach((lbl, i) => { labelToField[lbl] = schema.fields[i]; });
+      }
+      const rows = rawRows.map(raw => {
+        const mapped = {};
+        Object.keys(raw).forEach(h => {
+          const key = labelToField[h] || h; // fallback: usa o proprio cabecalho se nao reconhecer
+          mapped[key] = raw[h];
+        });
+        return mapped;
+      });
+      importData = rows;
+      const headers = rawRows.length ? Object.keys(rawRows[0]) : [];
+      const preview = `
+        <p style="margin-bottom:8px;font-size:12px;color:var(--text2);">📋 ${rows.length} linha(s) encontrada(s). Colunas: ${headers.join(', ')}</p>
+        <table style="width:100%;font-size:11px;border-collapse:collapse;">
+          <thead><tr>${headers.map(h=>`<th style="border:1px solid var(--border);padding:4px 6px;background:var(--bg3);text-align:left">${h}</th>`).join('')}</tr></thead>
+          <tbody>${rawRows.slice(0,5).map(r=>`<tr>${headers.map(h=>`<td style="border:1px solid var(--border);padding:4px 6px">${r[h]||''}</td>`).join('')}</tr>`).join('')}</tbody>
+        </table>
+        ${rows.length > 5 ? `<p style="margin-top:6px;font-size:11px;color:var(--text3);">... e mais ${rows.length-5} linha(s)</p>` : ''}
+      `;
+      document.getElementById('imp-preview-content').innerHTML = preview;
+      document.getElementById('imp-preview').style.display = 'block';
+      document.getElementById('btn-do-import').disabled = false;
+    } catch(e) { toast('Erro ao ler arquivo: '+e.message,'error'); }
+  };
+  reader.readAsBinaryString(file);
+}
+async function doImport() {
+  if (!importData || !importData.length) { toast('Nenhum dado para importar','error'); return; }
+  const tableMap = { empresas:'empresas', cdc:'cdc', contas:'conta_contabil', colaboradores:'colaboradores', atendimentos:'atendimentos' };
+  const table = tableMap[importModule];
+  const schema = exportSchemas[importModule];
+
+  // Carregar lookups para resolver nomes -> IDs
+  let empByName = {}, cdcByNameAndEmpresa = {};
+  if (schema && schema.lookups) {
+    if (schema.lookups.empresa_id) {
+      const emps = await sbGet('empresas','select=id,razao');
+      emps.forEach(e => empByName[(e.razao||'').trim().toLowerCase()] = e.id);
+    }
+    if (schema.lookups.cdc_id) {
+      const cdcs = await sbGet('cdc','select=id,empresa_id,centro_custo,sigla');
+      cdcs.forEach(c => {
+        const nome = String(c.centro_custo||c.sigla||'').trim().toLowerCase();
+        cdcByNameAndEmpresa[c.empresa_id+'|'+nome] = c.id;
+      });
+    }
+  }
+
+  let ok = 0, err = 0, logs = [];
+  for (const row of importData) {
+    try {
+      // Validacao especial para Empresas: CNPJ so pode repetir se for Filial
+      if (importModule === 'empresas' && row.cnpj) {
+        const filialVal = row.filial || 'Matriz';
+        const erroDuplicado = await checkCnpjDuplicado(String(row.cnpj).trim(), filialVal, null);
+        if (erroDuplicado) { throw new Error(erroDuplicado); }
+      }
+      // Resolver empresa_id pelo nome, se vazio
+      if (schema && schema.lookups && schema.lookups.empresa_id) {
+        if ((!row.empresa_id || String(row.empresa_id).trim()==='') && row.empresa_nome) {
+          const key = String(row.empresa_nome).trim().toLowerCase();
+          if (empByName[key]) row.empresa_id = empByName[key];
+        }
+      }
+      // Resolver cdc_id pelo nome do Centro de Custos (dentro da empresa resolvida), se vazio
+      if (schema && schema.lookups && schema.lookups.cdc_id) {
+        if ((!row.cdc_id || String(row.cdc_id).trim()==='') && row.cdc_codigo) {
+          const key = row.empresa_id+'|'+String(row.cdc_codigo).trim().toLowerCase();
+          if (cdcByNameAndEmpresa[key]) row.cdc_id = cdcByNameAndEmpresa[key];
+        }
+      }
+      // Resolver Período (dd/mm/aaaa) -> mes/ano separados, se a coluna periodo estiver presente
+      if (row.periodo !== undefined && row.periodo !== null && String(row.periodo).trim() !== '') {
+        const raw = String(row.periodo).trim();
+        let mesExtraido = '', anoExtraido = '';
+        // Aceita formatos dd/mm/aaaa, mm/aaaa, ou data serial do Excel ja convertida pela lib
+        const m = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/); // dd/mm/aaaa
+        const m2 = raw.match(/^(\d{1,2})\/(\d{4})$/); // mm/aaaa
+        if (m) { mesExtraido = m[2]; anoExtraido = m[3]; }
+        else if (m2) { mesExtraido = m2[1]; anoExtraido = m2[2]; }
+        if (mesExtraido && anoExtraido) {
+          row.mes = padMes(mesExtraido);
+          row.ano = anoExtraido;
+        }
+      }
+      // Remover colunas auxiliares de exibicao que nao existem na tabela
+      const cleanRow = { ...row };
+      delete cleanRow.empresa_nome;
+      delete cleanRow.cdc_codigo;
+      delete cleanRow.periodo;
+      // Remover campos vazios (string vazia) para nao sobrescrever com lixo
+      Object.keys(cleanRow).forEach(k => { if (cleanRow[k] === '') delete cleanRow[k]; });
+
+      // Normalizar mes para 2 dígitos (Excel costuma remover o zero à esquerda)
+      if (cleanRow.mes !== undefined && cleanRow.mes !== null && cleanRow.mes !== '') {
+        cleanRow.mes = padMes(cleanRow.mes);
+      }
+
+      const maxNr = await sbMaxNr(table);
+      let body = { ...cleanRow, nr_registro: maxNr + 1 };
+      if (table === 'cdc' || table === 'empresas') {
+        // criado_em e atualizado_em sao bigint (timestamp em ms)
+        body.criado_em = Date.now();
+        body.atualizado_em = Date.now();
+      } else if (table === 'conta_contabil') {
+        // criado_em e bigint, alterado_em e timestamp (texto ISO)
+        body.criado_em = Date.now();
+        body.alterado_em = now();
+      } else {
+        // demais tabelas: bigint (ms)
+        body.criado_em = Date.now();
+        body.atualizado_em = Date.now();
+      }
+      await sbPost(table, body);
+      ok++;
+    } catch(e) { err++; logs.push(`Linha erro: ${JSON.stringify(row).slice(0,60)}... → ${e.message}`); }
+  }
+  if (logs.length) {
+    document.getElementById('imp-log-content').innerHTML = logs.join('<br>');
+    document.getElementById('imp-log').style.display = 'block';
+  }
+  toast(`Importação: ${ok} sucesso, ${err} erros`, ok > 0 ? 'success' : 'error');
+  if (ok > 0) {
+    closeModal('modal-import');
+    if (importModule === 'empresas') loadEmpresas();
+    if (importModule === 'cdc') loadCdc();
+    if (importModule === 'contas') loadContas();
+    if (importModule === 'colaboradores') loadColaboradores();
+    if (importModule === 'atendimentos') loadAtendimentos();
+  }
+}
+
+
+
+// =============== NAVEGACAO ANTERIOR/PROXIMO ===============
+const _navConfig = {
+  emp:   { editVar: () => empEditId,   showFn: showEmpForm,   tableKey: 'emp'   },
+  cdc:   { editVar: () => cdcEditId,   showFn: showCdcForm,   tableKey: 'cdc'   },
+  conta: { editVar: () => contaEditId, showFn: showContaForm, tableKey: 'conta' },
+  colab: { editVar: () => colabEditId, showFn: showColabForm, tableKey: 'colab' },
+  atend: { editVar: () => atendEditId, showFn: showAtendForm, tableKey: 'atend' }
+};
+
+function navRecord(key, dir) {
+  const cfg = _navConfig[key];
+  if (!cfg) return;
+  const currentId = cfg.editVar();
+  const data = tableData[cfg.tableKey] || [];
+  if (!data.length) { toast('Nenhum registro disponível','info'); return; }
+  if (!currentId) { toast('Salve ou abra um registro existente para navegar','info'); return; }
+  const idx = data.findIndex(r => String(r.id) === String(currentId));
+  if (idx === -1) { toast('Registro não encontrado na lista','error'); return; }
+  let newIdx = idx + dir;
+  if (newIdx < 0) { toast('Este é o primeiro registro','info'); return; }
+  if (newIdx >= data.length) { toast('Este é o último registro','info'); return; }
+  cfg.showFn(data[newIdx]);
+}
+
+// =============== CDC HELPERS ===============
+
+async function onCdcEmpresaChange() {
+  const empresaId = document.getElementById('cdc-empresa').value;
+  // estabelecimento removido
+}
+
+function calcProximaAtualizacao() {
+  const dataVal = document.getElementById('cdc-data-validacao-rateio').value;
+  const periodo = parseInt(document.getElementById('cdc-periodicidade').value) || 0;
+  const proximaEl = document.getElementById('cdc-data-proxima-atualizacao');
+  const statusEl = document.getElementById('cdc-status-rateio');
+  if (dataVal && periodo > 0) {
+    const dt = new Date(dataVal + 'T00:00:00');
+    dt.setMonth(dt.getMonth() + periodo);
+    proximaEl.value = dt.toISOString().split('T')[0];
+    const hoje = new Date(); hoje.setHours(0,0,0,0);
+    statusEl.value = dt <= hoje ? 'Pendente' : 'Atualizado';
+  } else { proximaEl.value = ''; statusEl.value = ''; }
+}
+
+const _cdcLabels = {
+  'cdc-codigo-cdc':'Codigo CDC','cdc-codigo-rh':'Codigo RH','cdc-sigla':'Sigla',
+  'cdc-centro-custo':'Centro de Custo','cdc-grupo-servico':'Grupo Servico',
+  'cdc-grupo-cdc':'Grupo CDC','cdc-classificacao':'Classificacao CDC',
+  'cdc-tipo':'Tipo CDC','cdc-unidade-mensuracao':'Unidade de Mensuracao',
+  'cdc-caracteristica':'Caracteristica','cdc-responsavel-cdc':'Responsavel CDC',
+  'cdc-gerente-responsavel':'Gerente','cdc-status-cdc':'Status CDC',
+  'cdc-criterio-rateio':'Criterio Rateio','cdc-responsavel-rateio':'Responsavel Rateio',
+  'cdc-relatorio-rateio':'Relatorio Rateio','cdc-taxa-ocupacao':'Taxa Ocupacao Padrao',
+  'cdc-periodicidade':'Periodicidade (meses)','cdc-distribui-rateio':'Distribui Rateio',
+  'cdc-ordem-rateio':'Ordem Rateio','cdc-status-rateio':'Status Rateio',
+  'cdc-data-validacao-rateio':'Data Validacao','cdc-data-proxima-atualizacao':'Proxima Atualizacao',
+  'cdc-src':'Origem','cdc-observacoes':'Observacoes'
+};
+let _cdcSnap = {};
+
+function snapshotCdcForm() {
+  const snap = {};
+  Object.keys(_cdcLabels).forEach(function(id) {
+    const el = document.getElementById(id); if(el) snap[id] = el.value;
+  });
+  return snap;
+}
+
+function detectCdcChanges(before, after) {
+  const changes = [];
+  Object.keys(before).forEach(function(k) {
+    if ((before[k]||'') !== (after[k]||''))
+      changes.push({ campo: _cdcLabels[k]||k, de: before[k]||'(vazio)', para: after[k]||'(vazio)' });
+  });
+  return changes;
+}
+
+async function loadCdcLog(cdcId) {
+  const panel = document.getElementById('cdc-log-panel');
+  const list = document.getElementById('cdc-log-list');
+  try {
+    const logs = await sbGet('cdc_log', 'cdc_id=eq.'+cdcId+'&order=criado_em.desc&limit=30');
+    if (!logs.length) { panel.style.display = 'none'; return; }
+    panel.style.display = 'block';
+    list.innerHTML = logs.map(function(l) {
+      let m = l.mudancas;
+      if (typeof m === 'string') { try { m = JSON.parse(m); } catch(e) { m = []; } }
+      const linhas = (m||[]).map(function(x) {
+        return '<span><b>'+x.campo+'</b>: <span style="color:var(--danger)">'+x.de+'</span> &rarr; <span style="color:var(--success)">'+x.para+'</span></span>';
+      }).join('<br>');
+      return '<div style="padding:8px 10px;background:var(--bg2);border-radius:6px;border-left:3px solid var(--accent);margin-bottom:4px;">'
+        +'<div style="font-size:11px;color:var(--text3);margin-bottom:4px;">'+fmtDate(l.criado_em)+'</div>'
+        +'<div>'+linhas+'</div></div>';
+    }).join('');
+  } catch(e) { panel.style.display = 'none'; }
+}
+
+async function saveCdcLog(cdcId, changes) {
+  if (!changes.length) return;
+  try { await sbPost('cdc_log', { cdc_id: cdcId, mudancas: JSON.stringify(changes), criado_em: now() }); }
+  catch(e) { /* tabela pode nao existir ainda */ }
+}
+
+// =============== INIT ===============
+function initYearFilters() {
+  const y = new Date().getFullYear();
+  const years = Array.from({length:6},(_,i)=>y-i);
+  ['colab-filter-ano','atend-filter-ano'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.innerHTML = '<option value="">Todos os anos</option>' + years.map(yr=>`<option value="${yr}">${yr}</option>`).join('');
+  });
+}
+
+initYearFilters();
+loadDashboard();
+</script>
+</body>
+</html>
