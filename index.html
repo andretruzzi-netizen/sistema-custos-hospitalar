@@ -343,6 +343,23 @@
   .editing .view-mode { display: none; }
   .editing .edit-mode { display: block; }
 
+
+  /* Banner duplicação */
+  .dup-banner {
+    background: #fff8eb;
+    border: 1px solid #b45309;
+    border-left: 4px solid #b45309;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: #7c3d12;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: slideIn .2s ease;
+  }
+  .dup-banner strong { color: #b45309; }
   .loading { text-align: center; padding: 40px; color: var(--text3); }
 
   @media (max-width: 768px) {
@@ -398,6 +415,9 @@
         <div class="nav-sub" id="cad-adic-sub">
           <div class="nav-sub-item" id="nav-sub-class-cdc" onclick="showSection('class-cdc')">
             <span class="icon">🏷️</span><span class="label">Classificação CDC</span>
+          </div>
+          <div class="nav-sub-item" id="nav-sub-unid-mens" onclick="showSection('unid-mens')">
+            <span class="icon">📐</span><span class="label">Unidades de Mensuração</span>
           </div>
         </div>
       </div>
@@ -542,7 +562,9 @@
               <button class="btn btn-secondary" onclick="navRecord('emp',-1)" title="Anterior">◀</button>
               <button class="btn btn-secondary" onclick="navRecord('emp',1)" title="Próximo">▶</button>
             </div>
-            <div class="form-actions-right">
+            <div class="form-actions-right" style="gap:6px;">
+              <button class="btn btn-danger btn-sm" id="btn-del-emp" style="display:none;">🗑️ Excluir</button>
+              <button class="btn btn-secondary btn-sm" id="btn-dup-emp" style="display:none;">📋 Duplicar</button>
               <button class="btn btn-secondary" onclick="cancelEmpForm()">Cancelar</button>
               <button class="btn btn-primary" onclick="saveEmpresa()">💾 Salvar</button>
             </div>
@@ -578,7 +600,9 @@
               <button class="btn btn-secondary" onclick="navRecord('emp',-1)" title="Anterior">◀</button>
               <button class="btn btn-secondary" onclick="navRecord('emp',1)" title="Próximo">▶</button>
             </div>
-            <div class="form-actions-right">
+            <div class="form-actions-right" style="gap:6px;">
+              <button class="btn btn-danger btn-sm" id="btn-del-emp" style="display:none;">🗑️ Excluir</button>
+              <button class="btn btn-secondary btn-sm" id="btn-dup-emp" style="display:none;">📋 Duplicar</button>
               <button class="btn btn-secondary" onclick="cancelEmpForm()">Cancelar</button>
               <button class="btn btn-primary" onclick="saveEmpresa()">💾 Salvar</button>
             </div>
@@ -615,7 +639,9 @@
               <button class="btn btn-secondary" onclick="navRecord('cdc',-1)" title="Anterior">◀</button>
               <button class="btn btn-secondary" onclick="navRecord('cdc',1)" title="Próximo">▶</button>
             </div>
-            <div class="form-actions-right">
+            <div class="form-actions-right" style="gap:6px;">
+              <button class="btn btn-danger btn-sm" id="btn-del-cdc" style="display:none;">🗑️ Excluir</button>
+              <button class="btn btn-secondary btn-sm" id="btn-dup-cdc" style="display:none;">📋 Duplicar</button>
               <button class="btn btn-secondary" onclick="cancelCdcForm()">Cancelar</button>
               <button class="btn btn-primary" onclick="saveCdc()">💾 Salvar</button>
             </div>
@@ -661,18 +687,7 @@
             </div>
             <div class="form-group"><label>Unidade de Mensuração</label>
               <select id="cdc-unidade-mensuracao">
-                <option value="">Selecione</option>
-                <option>Atendimento</option>
-                <option>Cirurgia</option>
-                <option>Consulta</option>
-                <option>Contas Faturadas</option>
-                <option>Diária</option>
-                <option>Exame</option>
-                <option>Hora</option>
-                <option>Metragem</option>
-                <option>Por Colaborador</option>
-                <option>Procedimento</option>
-                <option>Sessão</option>
+                <option value="">Carregando...</option>
               </select>
             </div>
             <div class="form-group"><label>Característica</label>
@@ -731,7 +746,9 @@
               <button class="btn btn-secondary" onclick="navRecord('cdc',-1)" title="Anterior">◀</button>
               <button class="btn btn-secondary" onclick="navRecord('cdc',1)" title="Próximo">▶</button>
             </div>
-            <div class="form-actions-right">
+            <div class="form-actions-right" style="gap:6px;">
+              <button class="btn btn-danger btn-sm" id="btn-del-cdc" style="display:none;">🗑️ Excluir</button>
+              <button class="btn btn-secondary btn-sm" id="btn-dup-cdc" style="display:none;">📋 Duplicar</button>
               <button class="btn btn-secondary" onclick="cancelCdcForm()">Cancelar</button>
               <button class="btn btn-primary" onclick="saveCdc()">💾 Salvar</button>
             </div>
@@ -768,7 +785,9 @@
               <button class="btn btn-secondary" onclick="navRecord('conta',-1)" title="Anterior">◀</button>
               <button class="btn btn-secondary" onclick="navRecord('conta',1)" title="Próximo">▶</button>
             </div>
-            <div class="form-actions-right">
+            <div class="form-actions-right" style="gap:6px;">
+              <button class="btn btn-danger btn-sm" id="btn-del-conta" style="display:none;">🗑️ Excluir</button>
+              <button class="btn btn-secondary btn-sm" id="btn-dup-conta" style="display:none;">📋 Duplicar</button>
               <button class="btn btn-secondary" onclick="cancelContaForm()">Cancelar</button>
               <button class="btn btn-primary" onclick="saveConta()">💾 Salvar</button>
             </div>
@@ -833,7 +852,9 @@
               <button class="btn btn-secondary" onclick="navRecord('conta',-1)" title="Anterior">◀</button>
               <button class="btn btn-secondary" onclick="navRecord('conta',1)" title="Próximo">▶</button>
             </div>
-            <div class="form-actions-right">
+            <div class="form-actions-right" style="gap:6px;">
+              <button class="btn btn-danger btn-sm" id="btn-del-conta" style="display:none;">🗑️ Excluir</button>
+              <button class="btn btn-secondary btn-sm" id="btn-dup-conta" style="display:none;">📋 Duplicar</button>
               <button class="btn btn-secondary" onclick="cancelContaForm()">Cancelar</button>
               <button class="btn btn-primary" onclick="saveConta()">💾 Salvar</button>
             </div>
@@ -891,7 +912,9 @@
               <button class="btn btn-secondary" onclick="navRecord('colab',-1)" title="Anterior">◀</button>
               <button class="btn btn-secondary" onclick="navRecord('colab',1)" title="Próximo">▶</button>
             </div>
-            <div class="form-actions-right">
+            <div class="form-actions-right" style="gap:6px;">
+              <button class="btn btn-danger btn-sm" id="btn-del-colab" style="display:none;">🗑️ Excluir</button>
+              <button class="btn btn-secondary btn-sm" id="btn-dup-colab" style="display:none;">📋 Duplicar</button>
               <button class="btn btn-secondary" onclick="cancelColabForm()">Cancelar</button>
               <button class="btn btn-primary" onclick="saveColab()">💾 Salvar</button>
             </div>
@@ -989,7 +1012,9 @@
               <button class="btn btn-secondary" onclick="navRecord('colab',-1)" title="Anterior">◀</button>
               <button class="btn btn-secondary" onclick="navRecord('colab',1)" title="Próximo">▶</button>
             </div>
-            <div class="form-actions-right">
+            <div class="form-actions-right" style="gap:6px;">
+              <button class="btn btn-danger btn-sm" id="btn-del-colab" style="display:none;">🗑️ Excluir</button>
+              <button class="btn btn-secondary btn-sm" id="btn-dup-colab" style="display:none;">📋 Duplicar</button>
               <button class="btn btn-secondary" onclick="cancelColabForm()">Cancelar</button>
               <button class="btn btn-primary" onclick="saveColab()">💾 Salvar</button>
             </div>
@@ -1047,7 +1072,9 @@
               <button class="btn btn-secondary" onclick="navRecord('atend',-1)" title="Anterior">◀</button>
               <button class="btn btn-secondary" onclick="navRecord('atend',1)" title="Próximo">▶</button>
             </div>
-            <div class="form-actions-right">
+            <div class="form-actions-right" style="gap:6px;">
+              <button class="btn btn-danger btn-sm" id="btn-del-atend" style="display:none;">🗑️ Excluir</button>
+              <button class="btn btn-secondary btn-sm" id="btn-dup-atend" style="display:none;">📋 Duplicar</button>
               <button class="btn btn-secondary" onclick="cancelAtendForm()">Cancelar</button>
               <button class="btn btn-primary" onclick="saveAtend()">💾 Salvar</button>
             </div>
@@ -1077,7 +1104,9 @@
               <button class="btn btn-secondary" onclick="navRecord('atend',-1)" title="Anterior">◀</button>
               <button class="btn btn-secondary" onclick="navRecord('atend',1)" title="Próximo">▶</button>
             </div>
-            <div class="form-actions-right">
+            <div class="form-actions-right" style="gap:6px;">
+              <button class="btn btn-danger btn-sm" id="btn-del-atend" style="display:none;">🗑️ Excluir</button>
+              <button class="btn btn-secondary btn-sm" id="btn-dup-atend" style="display:none;">📋 Duplicar</button>
               <button class="btn btn-secondary" onclick="cancelAtendForm()">Cancelar</button>
               <button class="btn btn-primary" onclick="saveAtend()">💾 Salvar</button>
             </div>
@@ -1123,7 +1152,9 @@
               <button class="btn btn-secondary" onclick="navRecord('estserv',-1)" title="Anterior">◀</button>
               <button class="btn btn-secondary" onclick="navRecord('estserv',1)" title="Próximo">▶</button>
             </div>
-            <div class="form-actions-right">
+            <div class="form-actions-right" style="gap:6px;">
+              <button class="btn btn-danger btn-sm" id="btn-del-estserv" style="display:none;">🗑️ Excluir</button>
+              <button class="btn btn-secondary btn-sm" id="btn-dup-estserv" style="display:none;">📋 Duplicar</button>
               <button class="btn btn-secondary" onclick="cancelEstServForm()">Cancelar</button>
               <button class="btn btn-primary" onclick="saveEstServ()">💾 Salvar</button>
             </div>
@@ -1192,7 +1223,9 @@
               <button class="btn btn-secondary" onclick="navRecord('estserv',-1)" title="Anterior">◀</button>
               <button class="btn btn-secondary" onclick="navRecord('estserv',1)" title="Próximo">▶</button>
             </div>
-            <div class="form-actions-right">
+            <div class="form-actions-right" style="gap:6px;">
+              <button class="btn btn-danger btn-sm" id="btn-del-estserv" style="display:none;">🗑️ Excluir</button>
+              <button class="btn btn-secondary btn-sm" id="btn-dup-estserv" style="display:none;">📋 Duplicar</button>
               <button class="btn btn-secondary" onclick="cancelEstServForm()">Cancelar</button>
               <button class="btn btn-primary" onclick="saveEstServ()">💾 Salvar</button>
             </div>
@@ -1236,7 +1269,9 @@
               <button class="btn btn-secondary" onclick="navRecord('capgeral',-1)" title="Anterior">◀</button>
               <button class="btn btn-secondary" onclick="navRecord('capgeral',1)" title="Próximo">▶</button>
             </div>
-            <div class="form-actions-right">
+            <div class="form-actions-right" style="gap:6px;">
+              <button class="btn btn-danger btn-sm" id="btn-del-capgeral" style="display:none;">🗑️ Excluir</button>
+              <button class="btn btn-secondary btn-sm" id="btn-dup-capgeral" style="display:none;">📋 Duplicar</button>
               <button class="btn btn-secondary" onclick="cancelCapGeralForm()">Cancelar</button>
               <button class="btn btn-primary" onclick="saveCapGeral()">💾 Salvar</button>
             </div>
@@ -1304,9 +1339,74 @@
               <button class="btn btn-secondary" onclick="navRecord('capgeral',-1)" title="Anterior">◀</button>
               <button class="btn btn-secondary" onclick="navRecord('capgeral',1)" title="Próximo">▶</button>
             </div>
-            <div class="form-actions-right">
+            <div class="form-actions-right" style="gap:6px;">
+              <button class="btn btn-danger btn-sm" id="btn-del-capgeral" style="display:none;">🗑️ Excluir</button>
+              <button class="btn btn-secondary btn-sm" id="btn-dup-capgeral" style="display:none;">📋 Duplicar</button>
               <button class="btn btn-secondary" onclick="cancelCapGeralForm()">Cancelar</button>
               <button class="btn btn-primary" onclick="saveCapGeral()">💾 Salvar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- UNIDADES DE MENSURAÇÃO -->
+    <div id="sec-unid-mens" class="section">
+      <div class="view-mode" id="unid-mens-view">
+        <div class="stats-row" id="unid-mens-stats"></div>
+        <div class="toolbar">
+          <input class="search-box" type="text" placeholder="🔍 Buscar unidade..." oninput="filterTable('unidmens',this.value)">
+          <button class="btn btn-primary" onclick="showUnidMensForm()">+ Nova Unidade</button>
+          <button class="btn btn-secondary" onclick="openExportModal('unid_mens')">⬇ Exportar</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Nº</th><th>Unidade de Mensuração</th><th>Observação</th><th>Status</th><th>Criado em</th><th>Alterado em</th><th>Ações</th></tr>
+            </thead>
+            <tbody id="unid-mens-tbody"></tbody>
+          </table>
+          <div id="unid-mens-empty" class="empty-state hidden">
+            <div class="icon">📐</div><p>Nenhuma unidade cadastrada</p>
+          </div>
+        </div>
+      </div>
+      <div class="edit-mode" id="unid-mens-form-wrap">
+        <div class="panel">
+          <div class="panel-title" id="unid-mens-form-title">➕ Nova Unidade de Mensuração</div>
+          <div class="form-actions" style="margin-top:0;padding-top:0;border-top:none;border-bottom:1px solid var(--border);padding-bottom:16px;margin-bottom:16px;">
+            <div class="form-nav">
+              <button class="btn btn-secondary" onclick="navRecord('unidmens',-1)" title="Anterior">◀</button>
+              <button class="btn btn-secondary" onclick="navRecord('unidmens',1)" title="Próximo">▶</button>
+            </div>
+            <div class="form-actions-right" style="gap:6px;">
+              <button class="btn btn-danger btn-sm" id="btn-del-unidmens" style="display:none;">🗑️ Excluir</button>
+              <button class="btn btn-secondary btn-sm" id="btn-dup-unidmens" style="display:none;">📋 Duplicar</button>
+              <button class="btn btn-secondary" onclick="cancelUnidMensForm()">Cancelar</button>
+              <button class="btn btn-primary" onclick="saveUnidMens()">💾 Salvar</button>
+            </div>
+          </div>
+          <div class="form-grid">
+            <div class="form-group"><label>Nº de Registro</label><input id="unid-mens-nr" readonly placeholder="Automático"></div>
+            <div class="form-group"><label>Unidade de Mensuração <span class="req">*</span></label><input id="unid-mens-nome" placeholder="Ex: Diária"></div>
+            <div class="form-group"><label>Status</label>
+              <select id="unid-mens-status"><option value="Ativo">Ativo</option><option value="Inativo">Inativo</option></select>
+            </div>
+            <div class="form-group full"><label>Observação</label><input id="unid-mens-observacao" placeholder="Observação ou informação complementar"></div>
+            <div class="form-group"><label>Criado em</label><input id="unid-mens-criado" readonly></div>
+            <div class="form-group"><label>Alterado em</label><input id="unid-mens-alterado" readonly></div>
+          </div>
+          <div class="form-actions">
+            <div class="form-nav">
+              <button class="btn btn-secondary" onclick="navRecord('unidmens',-1)" title="Anterior">◀</button>
+              <button class="btn btn-secondary" onclick="navRecord('unidmens',1)" title="Próximo">▶</button>
+            </div>
+            <div class="form-actions-right" style="gap:6px;">
+              <button class="btn btn-danger btn-sm" id="btn-del-unidmens" style="display:none;">🗑️ Excluir</button>
+              <button class="btn btn-secondary btn-sm" id="btn-dup-unidmens" style="display:none;">📋 Duplicar</button>
+              <button class="btn btn-secondary" onclick="cancelUnidMensForm()">Cancelar</button>
+              <button class="btn btn-primary" onclick="saveUnidMens()">💾 Salvar</button>
             </div>
           </div>
         </div>
@@ -1342,7 +1442,9 @@
               <button class="btn btn-secondary" onclick="navRecord('classcdc',-1)" title="Anterior">◀</button>
               <button class="btn btn-secondary" onclick="navRecord('classcdc',1)" title="Próximo">▶</button>
             </div>
-            <div class="form-actions-right">
+            <div class="form-actions-right" style="gap:6px;">
+              <button class="btn btn-danger btn-sm" id="btn-del-classcdc" style="display:none;">🗑️ Excluir</button>
+              <button class="btn btn-secondary btn-sm" id="btn-dup-classcdc" style="display:none;">📋 Duplicar</button>
               <button class="btn btn-secondary" onclick="cancelClassCdcForm()">Cancelar</button>
               <button class="btn btn-primary" onclick="saveClassCdc()">💾 Salvar</button>
             </div>
@@ -1362,7 +1464,9 @@
               <button class="btn btn-secondary" onclick="navRecord('classcdc',-1)" title="Anterior">◀</button>
               <button class="btn btn-secondary" onclick="navRecord('classcdc',1)" title="Próximo">▶</button>
             </div>
-            <div class="form-actions-right">
+            <div class="form-actions-right" style="gap:6px;">
+              <button class="btn btn-danger btn-sm" id="btn-del-classcdc" style="display:none;">🗑️ Excluir</button>
+              <button class="btn btn-secondary btn-sm" id="btn-dup-classcdc" style="display:none;">📋 Duplicar</button>
               <button class="btn btn-secondary" onclick="cancelClassCdcForm()">Cancelar</button>
               <button class="btn btn-primary" onclick="saveClassCdc()">💾 Salvar</button>
             </div>
@@ -1404,7 +1508,9 @@
               <button class="btn btn-secondary" onclick="navRecord('capcc',-1)" title="Anterior">◀</button>
               <button class="btn btn-secondary" onclick="navRecord('capcc',1)" title="Próximo">▶</button>
             </div>
-            <div class="form-actions-right">
+            <div class="form-actions-right" style="gap:6px;">
+              <button class="btn btn-danger btn-sm" id="btn-del-capcc" style="display:none;">🗑️ Excluir</button>
+              <button class="btn btn-secondary btn-sm" id="btn-dup-capcc" style="display:none;">📋 Duplicar</button>
               <button class="btn btn-secondary" onclick="cancelCapCcForm()">Cancelar</button>
               <button class="btn btn-primary" onclick="saveCapCc()">💾 Salvar</button>
             </div>
@@ -1451,7 +1557,9 @@
               <button class="btn btn-secondary" onclick="navRecord('capcc',-1)" title="Anterior">◀</button>
               <button class="btn btn-secondary" onclick="navRecord('capcc',1)" title="Próximo">▶</button>
             </div>
-            <div class="form-actions-right">
+            <div class="form-actions-right" style="gap:6px;">
+              <button class="btn btn-danger btn-sm" id="btn-del-capcc" style="display:none;">🗑️ Excluir</button>
+              <button class="btn btn-secondary btn-sm" id="btn-dup-capcc" style="display:none;">📋 Duplicar</button>
               <button class="btn btn-secondary" onclick="cancelCapCcForm()">Cancelar</button>
               <button class="btn btn-primary" onclick="saveCapCc()">💾 Salvar</button>
             </div>
@@ -1672,6 +1780,7 @@ const sectionMeta = {
   colaboradores: { title: 'Colaboradores', sub: 'Cadastro de colaboradores por período' },
   atendimentos: { title: 'Atendimentos / Produção', sub: 'Dados de produção hospitalar por período' },
   'class-cdc': { title: 'Classificação CDC', sub: 'Cadastro de classificações de centros de custo' },
+  'unid-mens': { title: 'Unidades de Mensuração', sub: 'Cadastro de unidades de mensuração' },
   'est-serv':   { title: 'Estrutura', sub: '' },
   'cap-geral': { title: 'Capacidade', sub: '' },
   'cap-cc': { title: 'Centro Cirúrgico', sub: 'Capacidade instalada do Centro Cirúrgico' },
@@ -1696,6 +1805,7 @@ function showSection(id) {
   if (id === 'atendimentos') loadAtendimentos();
   if (id === 'cap-cc') loadCapCc();
   if (id === 'class-cdc') loadClassCdc();
+  if (id === 'unid-mens') loadUnidMens();
   if (id === 'est-serv') loadEstServ();
   if (id === 'cap-geral') loadCapGeral();
 }
@@ -1709,15 +1819,15 @@ document.querySelectorAll('.nav-item').forEach(item => {
 });
 
 // =============== SEARCH / FILTER ===============
-let tableData = { emp: [], cdc: [], conta: [], colab: [], atend: [], capcc: [], classcdc: [], estserv: [], capgeral: [] };
+let tableData = { emp: [], cdc: [], conta: [], colab: [], atend: [], capcc: [], classcdc: [], estserv: [], capgeral: [], unidmens: [] };
 function filterTable(key, q) {
   const data = tableData[key] || [];
   const filtered = q ? data.filter(r => JSON.stringify(r).toLowerCase().includes(q.toLowerCase())) : data;
   renderTable(key, filtered);
 }
 function renderTable(key, data) {
-  const tbodyMap = { emp:'emp-tbody', cdc:'cdc-tbody', conta:'conta-tbody', colab:'colab-tbody', atend:'atend-tbody', capcc:'cap-cc-tbody', classcdc:'class-cdc-tbody', estserv:'est-serv-tbody', capgeral:'cap-geral-tbody' };
-  const emptyMap = { emp:'emp-empty', cdc:'cdc-empty', conta:'conta-empty', colab:'colab-empty', atend:'atend-empty', capcc:'cap-cc-empty', classcdc:'class-cdc-empty', estserv:'est-serv-empty', capgeral:'cap-geral-empty' };
+  const tbodyMap = { emp:'emp-tbody', cdc:'cdc-tbody', conta:'conta-tbody', colab:'colab-tbody', atend:'atend-tbody', capcc:'cap-cc-tbody', classcdc:'class-cdc-tbody', estserv:'est-serv-tbody', capgeral:'cap-geral-tbody', unidmens:'unid-mens-tbody' };
+  const emptyMap = { emp:'emp-empty', cdc:'cdc-empty', conta:'conta-empty', colab:'colab-empty', atend:'atend-empty', capcc:'cap-cc-empty', classcdc:'class-cdc-empty', estserv:'est-serv-empty', capgeral:'cap-geral-empty', unidmens:'unid-mens-empty' };
   document.getElementById(emptyMap[key]).classList.toggle('hidden', data.length > 0);
   const tbody = document.getElementById(tbodyMap[key]);
   if (key === 'emp') tbody.innerHTML = data.map(r => `
@@ -1729,7 +1839,8 @@ function renderTable(key, data) {
       <td>${r.atividade||''}</td>
       <td>${r.cidade||''}</td><td>${r.estado||''}</td>
       <td><div class="actions-cell">
-        <button class="btn btn-warning btn-sm" onclick="editEmpresa('${r.id}')">✏️</button>
+        <button class="btn btn-warning btn-sm" onclick="editEmpresa('${r.id}')" title="Editar">✏️</button>
+        <button class="btn btn-secondary btn-sm" onclick="duplicarEmp('${r.id}')" title="Duplicar">📋</button>
       </div></td>
     </tr>`).join('');
   if (key === 'cdc') tbody.innerHTML = data.map(r => `
@@ -1742,7 +1853,8 @@ function renderTable(key, data) {
       <td>${r.tipo_cdc||''}</td>
       <td><span class="badge ${r.status_cdc==='Ativo'?'badge-green':'badge-red'}">${r.status_cdc||''}</span></td>
       <td><div class="actions-cell">
-        <button class="btn btn-warning btn-sm" onclick="editCdc('${r.id}')">✏️</button>
+        <button class="btn btn-warning btn-sm" onclick="editCdc('${r.id}')" title="Editar">✏️</button>
+        <button class="btn btn-secondary btn-sm" onclick="duplicarCdc('${r.id}')" title="Duplicar">📋</button>
       </div></td>
     </tr>`).join('');
   if (key === 'conta') tbody.innerHTML = data.map(r => `
@@ -1754,7 +1866,8 @@ function renderTable(key, data) {
       <td>${r.subclasse||''}</td>
       <td><span class="badge ${r.status==='Ativa'?'badge-green':'badge-red'}">${r.status||''}</span></td>
       <td><div class="actions-cell">
-        <button class="btn btn-warning btn-sm" onclick="editConta('${r.id}')">✏️</button>
+        <button class="btn btn-warning btn-sm" onclick="editConta('${r.id}')" title="Editar">✏️</button>
+        <button class="btn btn-secondary btn-sm" onclick="duplicarConta('${r.id}')" title="Duplicar">📋</button>
       </div></td>
     </tr>`).join('');
   if (key === 'colab') tbody.innerHTML = data.map(r => `
@@ -1767,8 +1880,9 @@ function renderTable(key, data) {
       <td>${r.tipo_vinculo||''}</td>
       <td>${fmtPeriodo(r.mes, r.ano)}</td>
       <td><div class="actions-cell">
-        <button class="btn btn-warning btn-sm" onclick="editColab('${r.id}')">✏️</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteColab('${r.id}')">🗑️</button>
+        <button class="btn btn-warning btn-sm" onclick="editColab('${r.id}')" title="Editar">✏️</button>
+        <button class="btn btn-secondary btn-sm" onclick="duplicarColab('${r.id}')" title="Duplicar">📋</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteColab('${r.id}')" title="Excluir">🗑️</button>
       </div></td>
     </tr>`).join('');
   if (key === 'atend') tbody.innerHTML = data.map(r => `
@@ -1781,8 +1895,9 @@ function renderTable(key, data) {
       <td>${r.pacientes||0}</td>
       <td>${r.taxa_ocupacao||0}%</td>
       <td><div class="actions-cell">
-        <button class="btn btn-warning btn-sm" onclick="editAtend('${r.id}')">✏️</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteAtend('${r.id}')">🗑️</button>
+        <button class="btn btn-warning btn-sm" onclick="editAtend('${r.id}')" title="Editar">✏️</button>
+        <button class="btn btn-secondary btn-sm" onclick="duplicarAtend('${r.id}')" title="Duplicar">📋</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteAtend('${r.id}')" title="Excluir">🗑️</button>
       </div></td>
     </tr>`).join('');
   if (key === 'capcc') tbody.innerHTML = data.map(r => `
@@ -1796,8 +1911,23 @@ function renderTable(key, data) {
       <td>${r.fim||''}</td>
       <td>${r.numero_salas||''}</td>
       <td><div class="actions-cell">
-        <button class="btn btn-warning btn-sm" onclick="editCapCc('${r.id}')">✏️</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteCapCc('${r.id}')">🗑️</button>
+        <button class="btn btn-warning btn-sm" onclick="editCapCc('${r.id}')" title="Editar">✏️</button>
+        <button class="btn btn-secondary btn-sm" onclick="duplicarCapCc('${r.id}')" title="Duplicar">📋</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteCapCc('${r.id}')" title="Excluir">🗑️</button>
+      </div></td>
+    </tr>`).join('');
+  if (key === 'unidmens') tbody.innerHTML = data.map(r => `
+    <tr ondblclick="editUnidMens('${r.id}')" title="Duplo clique para editar">
+      <td class="mono">${r.nr_registro||''}</td>
+      <td><strong>${r.nome||''}</strong></td>
+      <td>${r.observacao||''}</td>
+      <td><span class="badge ${r.status==='Ativo'?'badge-green':'badge-red'}">${r.status||''}</span></td>
+      <td class="text-sm">${fmtDate(r.criado_em)}</td>
+      <td class="text-sm">${fmtDate(r.atualizado_em)}</td>
+      <td><div class="actions-cell">
+        <button class="btn btn-warning btn-sm" onclick="editUnidMens('${r.id}')" title="Editar">✏️</button>
+        <button class="btn btn-secondary btn-sm" onclick="duplicarUnidMens('${r.id}')" title="Duplicar">📋</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteUnidMens('${r.id}')" title="Excluir">🗑️</button>
       </div></td>
     </tr>`).join('');
   if (key === 'classcdc') tbody.innerHTML = data.map(r => `
@@ -1809,8 +1939,9 @@ function renderTable(key, data) {
       <td class="text-sm">${fmtDate(r.criado_em)}</td>
       <td class="text-sm">${fmtDate(r.atualizado_em)}</td>
       <td><div class="actions-cell">
-        <button class="btn btn-warning btn-sm" onclick="editClassCdc('${r.id}')">✏️</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteClassCdc('${r.id}')">🗑️</button>
+        <button class="btn btn-warning btn-sm" onclick="editClassCdc('${r.id}')" title="Editar">✏️</button>
+        <button class="btn btn-secondary btn-sm" onclick="duplicarClassCdc('${r.id}')" title="Duplicar">📋</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteClassCdc('${r.id}')" title="Excluir">🗑️</button>
       </div></td>
     </tr>`).join('');
   if (key === 'capgeral') tbody.innerHTML = data.map(r => `
@@ -1826,8 +1957,9 @@ function renderTable(key, data) {
       <td>${r.numero_leitos||'-'}</td>
       <td>${r.numero_colaboradores||'-'}</td>
       <td><div class="actions-cell">
-        <button class="btn btn-warning btn-sm" onclick="editCapGeral('${r.id}')">✏️</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteCapGeral('${r.id}')">🗑️</button>
+        <button class="btn btn-warning btn-sm" onclick="editCapGeral('${r.id}')" title="Editar">✏️</button>
+        <button class="btn btn-secondary btn-sm" onclick="duplicarCapGeral('${r.id}')" title="Duplicar">📋</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteCapGeral('${r.id}')" title="Excluir">🗑️</button>
       </div></td>
     </tr>`).join('');
   if (key === 'estserv') tbody.innerHTML = data.map(r => `
@@ -1841,8 +1973,9 @@ function renderTable(key, data) {
       <td>${fmtPeriodo(r.vigencia_inicio_mes, r.vigencia_inicio_ano)}</td>
       <td><span class="badge ${r.status==='Ativo'?'badge-green':'badge-red'}">${r.status||''}</span></td>
       <td><div class="actions-cell">
-        <button class="btn btn-warning btn-sm" onclick="editEstServ('${r.id}')">✏️</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteEstServ('${r.id}')">🗑️</button>
+        <button class="btn btn-warning btn-sm" onclick="editEstServ('${r.id}')" title="Editar">✏️</button>
+        <button class="btn btn-secondary btn-sm" onclick="duplicarEstServ('${r.id}')" title="Duplicar">📋</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteEstServ('${r.id}')" title="Excluir">🗑️</button>
       </div></td>
     </tr>`).join('');
 }
@@ -1898,6 +2031,7 @@ function showEmpForm(record = null) {
      'emp-endereco','emp-criado','emp-alterado','emp-atividade'].forEach(id=>f(id));
     f('emp-filial','Matriz');
   }
+  _setupFormEditBtns('btn-dup-emp','btn-del-emp', empEditId, duplicarEmp, deleteEmpresa, 'Excluir esta empresa?');
   document.getElementById('sec-empresas').classList.add('editing');
 }
 function cancelEmpForm() { document.getElementById('sec-empresas').classList.remove('editing'); }
@@ -2019,6 +2153,8 @@ f('cdc-centro-custo',record.centro_custo);
     if (cdcEditId) loadCdcLog(cdcEditId);
     else document.getElementById('cdc-log-panel').style.display = 'none';
     await populateClassifCdcSelect('cdc-classificacao', record ? record.classificacao_cdc : '');
+    await populateUnidMensSelect('cdc-unidade-mensuracao', record ? record.unidade_mensuracao : '');
+    _setupFormEditBtns('btn-dup-cdc','btn-del-cdc', cdcEditId, duplicarCdc, deleteCdc, 'Excluir este CDC?');
     document.getElementById('sec-cdc').classList.add('editing');
   } catch(e) { toast('Erro ao abrir formulário CDC: '+e.message,'error'); }
 }
@@ -2119,6 +2255,7 @@ async function showContaForm(record = null) {
      'conta-cdc-pad','conta-obs','conta-criado','conta-alterado'].forEach(id=>f(id));
     f('conta-lancamento','Sim'); f('conta-rateio','Não'); f('conta-status','Ativa');
   }
+  _setupFormEditBtns('btn-dup-conta','btn-del-conta', contaEditId, duplicarConta, deleteConta, 'Excluir esta conta?');
   document.getElementById('sec-contas').classList.add('editing');
 }
 function cancelContaForm() { document.getElementById('sec-contas').classList.remove('editing'); }
@@ -2272,6 +2409,7 @@ async function showColabForm(record = null) {
     f('colab-status','Ativo');
   }
   await populateClassifCdcSelect('colab-classificacao-cdc', record ? record.classificacao_cdc : '');
+  _setupFormEditBtns('btn-dup-colab','btn-del-colab', colabEditId, duplicarColab, deleteColab, 'Excluir este colaborador?');
   document.getElementById('sec-colaboradores').classList.add('editing');
 }
 async function loadCdcByEmpresa(cdcSelId, empSelId) {
@@ -2427,6 +2565,7 @@ async function showAtendForm(record = null) {
     f('atend-mes', padMes(new Date().getMonth()+1));
     f('atend-periodo', new Date().toISOString().slice(0,7)+'-01');
   }
+  _setupFormEditBtns('btn-dup-atend','btn-del-atend', atendEditId, duplicarAtend, deleteAtend, 'Excluir este registro?');
   document.getElementById('sec-atendimentos').classList.add('editing');
 }
 function cancelAtendForm() { document.getElementById('sec-atendimentos').classList.remove('editing'); }
@@ -2570,6 +2709,11 @@ const exportSchemas = {
       empresa_id: { table:'empresas', labelField:'razao', nameCol:'empresa_nome' },
       cdc_id: { table:'cdc', labelField:'centro_custo', nameCol:'cdc_nome' }
     }
+  },
+  unid_mens: {
+    table: 'unidades_mensuracao',
+    fields: ['nr_registro','nome','observacao','status','criado_em','atualizado_em'],
+    labels: ['Nº de Registro','Unidade de Mensuração','Observação','Status','Criado em','Alterado em'],
   },
   class_cdc: {
     table: 'classificacao_cdc',
@@ -2784,6 +2928,109 @@ async function doImport() {
 
 
 
+
+// =============== UNIDADES DE MENSURAÇÃO ===============
+let unidMensEditId = null;
+let _unidMensCache = [];
+
+async function loadUnidMensOptions() {
+  try {
+    const data = await sbGet('unidades_mensuracao', 'status=eq.Ativo');
+    _unidMensCache = data;
+    return data;
+  } catch(e) { return []; }
+}
+
+async function populateUnidMensSelect(selId, currentVal) {
+  const data = _unidMensCache.length ? _unidMensCache : await loadUnidMensOptions();
+  const sel = document.getElementById(selId);
+  if (!sel) return;
+  const prev = currentVal !== undefined ? currentVal : sel.value;
+  sel.innerHTML = '<option value="">Selecione</option>' +
+    data.map(r => `<option value="${r.nome}">${r.nome}</option>`).join('');
+  if (prev) sel.value = prev;
+}
+
+async function loadUnidMens() {
+  try {
+    const data = await sbGet('unidades_mensuracao');
+    tableData.unidmens = data;
+    renderTable('unidmens', data);
+    document.getElementById('unid-mens-stats').innerHTML = `
+      <div class="stat-card"><div class="s-label">Total</div><div class="s-value">${data.length}</div></div>
+      <div class="stat-card"><div class="s-label">Ativas</div><div class="s-value">${data.filter(r=>r.status==='Ativo').length}</div></div>
+    `;
+    _unidMensCache = [];
+  } catch(e) { toast('Erro ao carregar Unidades de Mensuração: '+e.message,'error'); }
+}
+
+async function showUnidMensForm(record = null) {
+  unidMensEditId = record ? record.id : null;
+  document.getElementById('unid-mens-form-title').textContent =
+    record ? '✏️ Editar Unidade de Mensuração' : '➕ Nova Unidade de Mensuração';
+  const f = (id, val='') => { const el=document.getElementById(id); if(el) el.value=(val===null||val===undefined)?'':val; };
+  if (record) {
+    f('unid-mens-nr', record.nr_registro);
+    f('unid-mens-nome', record.nome);
+    f('unid-mens-observacao', record.observacao);
+    f('unid-mens-status', record.status);
+    f('unid-mens-criado', fmtDate(record.criado_em));
+    f('unid-mens-alterado', fmtDate(record.atualizado_em));
+  } else {
+    ['unid-mens-nr','unid-mens-nome','unid-mens-observacao','unid-mens-criado','unid-mens-alterado'].forEach(id=>f(id));
+    f('unid-mens-status','Ativo');
+  }
+  _setupFormEditBtns('btn-dup-unidmens','btn-del-unidmens', unidMensEditId, duplicarUnidMens, deleteUnidMens, 'Excluir esta unidade?');
+  document.getElementById('sec-unid-mens').classList.add('editing');
+}
+
+function cancelUnidMensForm() {
+  document.getElementById('sec-unid-mens').classList.remove('editing');
+}
+
+async function saveUnidMens() {
+  const nome = document.getElementById('unid-mens-nome').value.trim();
+  if (!nome) { toast('Preencha o campo Unidade de Mensuração','error'); return; }
+  const body = {
+    nome,
+    observacao: document.getElementById('unid-mens-observacao').value.trim(),
+    status: document.getElementById('unid-mens-status').value,
+    atualizado_em: Date.now()
+  };
+  try {
+    if (unidMensEditId) {
+      await sbPatch('unidades_mensuracao', unidMensEditId, body);
+      toast('Unidade atualizada!','success');
+      _unidMensCache = [];
+      await loadUnidMens();
+      const updated = await sbGet('unidades_mensuracao',`id=eq.${unidMensEditId}`);
+      if (updated[0]) showUnidMensForm(updated[0]);
+    } else {
+      const maxNr = await sbMaxNr('unidades_mensuracao');
+      body.nr_registro = maxNr + 1;
+      body.criado_em = Date.now();
+      const created = await sbPost('unidades_mensuracao', body);
+      toast('Unidade cadastrada!','success');
+      _unidMensCache = [];
+      await loadUnidMens();
+      if (created && created[0]) showUnidMensForm(created[0]);
+      else cancelUnidMensForm();
+    }
+  } catch(e) { toast('Erro ao salvar: '+e.message,'error'); }
+}
+
+async function editUnidMens(id) {
+  try { const d = await sbGet('unidades_mensuracao',`id=eq.${id}`); if(d[0]) showUnidMensForm(d[0]); }
+  catch(e) { toast('Erro ao carregar','error'); }
+}
+
+async function deleteUnidMens(id) {
+  confirm2('Excluir esta unidade?', async () => {
+    try { await sbDelete('unidades_mensuracao',id); toast('Excluído','success'); _unidMensCache=[]; loadUnidMens(); }
+    catch(e) { toast('Erro ao excluir: '+e.message,'error'); }
+  });
+}
+
 // =============== NAVEGACAO ANTERIOR/PROXIMO ===============
 const _navConfig = {
   emp:   { editVar: () => empEditId,   showFn: showEmpForm,   tableKey: 'emp'   },
@@ -2793,6 +3040,7 @@ const _navConfig = {
   atend: { editVar: () => atendEditId, showFn: showAtendForm, tableKey: 'atend' },
   capcc: { editVar: () => capCcEditId, showFn: showCapCcForm, tableKey: 'capcc' },
   classcdc: { editVar: () => classCdcEditId, showFn: showClassCdcForm, tableKey: 'classcdc' },
+  unidmens: { editVar: () => unidMensEditId, showFn: showUnidMensForm, tableKey: 'unidmens' },
   estserv:  { editVar: () => estServEditId,  showFn: showEstServForm,  tableKey: 'estserv'  },
   capgeral: { editVar: () => capGeralEditId, showFn: showCapGeralForm, tableKey: 'capgeral' }
 };
@@ -3104,6 +3352,7 @@ async function showCapGeralForm(record = null) {
     f('cap-geral-mes', padMes(new Date().getMonth()+1));
     f('cap-geral-periodo', new Date().toISOString().slice(0,7)+'-01');
   }
+  _setupFormEditBtns('btn-dup-capgeral','btn-del-capgeral', capGeralEditId, duplicarCapGeral, deleteCapGeral, 'Excluir este registro?');
   document.getElementById('sec-cap-geral').classList.add('editing');
 }
 
@@ -3380,6 +3629,7 @@ async function showEstServForm(record = null) {
     syncVigenciaEstServ('inicio');
     f('est-serv-vig-fim','');
   }
+  _setupFormEditBtns('btn-dup-estserv','btn-del-estserv', estServEditId, duplicarEstServ, deleteEstServ, 'Excluir este registro?');
   document.getElementById('sec-est-serv').classList.add('editing');
 }
 
@@ -3499,6 +3749,7 @@ async function showClassCdcForm(record = null) {
     ['class-cdc-nr','class-cdc-codigo','class-cdc-classificacao','class-cdc-criado','class-cdc-alterado'].forEach(id=>f(id));
     f('class-cdc-status','Ativo');
   }
+  _setupFormEditBtns('btn-dup-classcdc','btn-del-classcdc', classCdcEditId, duplicarClassCdc, deleteClassCdc, 'Excluir esta classificação?');
   document.getElementById('sec-class-cdc').classList.add('editing');
 }
 
@@ -3632,6 +3883,7 @@ async function showCapCcForm(record = null) {
     f('cap-cc-mes', padMes(new Date().getMonth() + 1));
     f('cap-cc-periodo', new Date().toISOString().slice(0, 7) + '-01');
   }
+  _setupFormEditBtns('btn-dup-capcc','btn-del-capcc', capCcEditId, duplicarCapCc, deleteCapCc, 'Excluir este registro?');
   document.getElementById('sec-cap-cc').classList.add('editing');
 }
 
@@ -3706,6 +3958,142 @@ function toggleNavGroup(id) {
   const isOpen = sub.classList.contains('open');
   sub.classList.toggle('open', !isOpen);
   if (arrow) arrow.textContent = isOpen ? '▶' : '▼';
+}
+
+
+
+// Configura botões Duplicar/Excluir nos formulários de edição
+function _setupFormEditBtns(dupId, delId, recordId, dupFn, delFn, confirmMsg) {
+  [dupId, delId].forEach((id, i) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (recordId) {
+      el.style.display = '';
+      if (i === 0) el.onclick = () => dupFn(recordId);   // Duplicar
+      if (i === 1) el.onclick = () => {                  // Excluir
+        confirm2(confirmMsg, () => delFn(recordId));
+      };
+    } else {
+      el.style.display = 'none';
+    }
+  });
+}
+
+// =============== DUPLICAR REGISTROS ===============
+
+function _showDupBanner(panelId, nrOrigem) {
+  setTimeout(() => {
+    const panel = document.getElementById(panelId);
+    if (!panel) return;
+    document.querySelectorAll('.dup-banner').forEach(b => b.remove());
+    const banner = document.createElement('div');
+    banner.className = 'dup-banner';
+    banner.innerHTML = `📋 <span><strong>Duplicando Nº ${nrOrigem}</strong> — altere os campos necessários e clique em <strong>Salvar</strong> para criar um novo registro.</span>`;
+    const ref = panel.querySelector('.form-grid') || panel.children[1];
+    if (ref) panel.insertBefore(banner, ref);
+  }, 80);
+}
+
+async function duplicarEmp(id) {
+  try {
+    const d = await sbGet('empresas', `id=eq.${id}`);
+    if (!d[0]) return;
+    const nr = d[0].nr_registro;
+    showEmpForm({...d[0], id: null, nr_registro: null});
+    _showDupBanner('emp-form-wrap', nr);
+  } catch(e) { toast('Erro ao duplicar','error'); }
+}
+
+async function duplicarCdc(id) {
+  try {
+    const d = await sbGet('cdc', `id=eq.${id}`);
+    if (!d[0]) return;
+    const nr = d[0].nr_registro;
+    await showCdcForm({...d[0], id: null, nr_registro: null});
+    _showDupBanner('cdc-form-wrap', nr);
+  } catch(e) { toast('Erro ao duplicar','error'); }
+}
+
+async function duplicarConta(id) {
+  try {
+    const d = await sbGet('conta_contabil', `id=eq.${id}`);
+    if (!d[0]) return;
+    const nr = d[0].nr_registro;
+    showContaForm({...d[0], id: null, nr_registro: null});
+    _showDupBanner('conta-form-wrap', nr);
+  } catch(e) { toast('Erro ao duplicar','error'); }
+}
+
+async function duplicarColab(id) {
+  try {
+    const d = await sbGet('colaboradores', `id=eq.${id}`);
+    if (!d[0]) return;
+    const nr = d[0].nr_registro;
+    await showColabForm({...d[0], id: null, nr_registro: null});
+    _showDupBanner('colab-form-wrap', nr);
+  } catch(e) { toast('Erro ao duplicar','error'); }
+}
+
+async function duplicarAtend(id) {
+  try {
+    const d = await sbGet('atendimentos', `id=eq.${id}`);
+    if (!d[0]) return;
+    const nr = d[0].nr_registro;
+    await showAtendForm({...d[0], id: null, nr_registro: null});
+    _showDupBanner('atend-form-wrap', nr);
+  } catch(e) { toast('Erro ao duplicar','error'); }
+}
+
+async function duplicarCapCc(id) {
+  try {
+    const d = await sbGet('capacidade_cc', `id=eq.${id}`);
+    if (!d[0]) return;
+    const nr = d[0].nr_registro;
+    await showCapCcForm({...d[0], id: null, nr_registro: null});
+    _showDupBanner('cap-cc-form-wrap', nr);
+  } catch(e) { toast('Erro ao duplicar','error'); }
+}
+
+async function duplicarCapGeral(id) {
+  try {
+    const d = await sbGet('capacidade_geral', `id=eq.${id}`);
+    if (!d[0]) return;
+    const nr = d[0].nr_registro;
+    currentCapClassificacao = d[0].classificacao_cdc || currentCapClassificacao;
+    await showCapGeralForm({...d[0], id: null, nr_registro: null});
+    _showDupBanner('cap-geral-form-wrap', nr);
+  } catch(e) { toast('Erro ao duplicar','error'); }
+}
+
+async function duplicarEstServ(id) {
+  try {
+    const d = await sbGet('estrutura_servicos', `id=eq.${id}`);
+    if (!d[0]) return;
+    const nr = d[0].nr_registro;
+    currentEstClassificacao = d[0].classificacao_cdc || currentEstClassificacao;
+    await showEstServForm({...d[0], id: null, nr_registro: null});
+    _showDupBanner('est-serv-form-wrap', nr);
+  } catch(e) { toast('Erro ao duplicar','error'); }
+}
+
+async function duplicarClassCdc(id) {
+  try {
+    const d = await sbGet('classificacao_cdc', `id=eq.${id}`);
+    if (!d[0]) return;
+    const nr = d[0].nr_registro;
+    showClassCdcForm({...d[0], id: null, nr_registro: null});
+    _showDupBanner('class-cdc-form-wrap', nr);
+  } catch(e) { toast('Erro ao duplicar','error'); }
+}
+
+async function duplicarUnidMens(id) {
+  try {
+    const d = await sbGet('unidades_mensuracao', `id=eq.${id}`);
+    if (!d[0]) return;
+    const nr = d[0].nr_registro;
+    showUnidMensForm({...d[0], id: null, nr_registro: null});
+    _showDupBanner('unid-mens-form-wrap', nr);
+  } catch(e) { toast('Erro ao duplicar','error'); }
 }
 
 // =============== INIT ===============
