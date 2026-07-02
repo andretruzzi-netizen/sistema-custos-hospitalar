@@ -932,7 +932,7 @@
             <div class="form-group"><label>Logradouro</label><input id="emp-logradouro" placeholder="Rua / Av."></div>
             <div class="form-group"><label>Bairro</label><input id="emp-bairro" placeholder="Bairro"></div>
             <div class="form-group"><label>Cidade</label><input id="emp-cidade" placeholder="Cidade"></div>
-            <div class="form-group"><label>Estado</label><select id="emp-uf">
+            <div class="form-group"><label>Estado</label><select id="emp-uf" onchange="autoPreencherRegiao()">
               <option value="">Selecione</option>
               <option>AC</option><option>AL</option><option>AP</option><option>AM</option><option>BA</option><option>CE</option>
               <option>DF</option><option>ES</option><option>GO</option><option>MA</option><option>MT</option><option>MS</option>
@@ -940,6 +940,7 @@
               <option>RJ</option><option>RN</option><option>RS</option><option>RO</option><option>RR</option><option>SC</option>
               <option>SP</option><option>SE</option><option>TO</option>
             </select></div>
+            <div class="form-group"><label>Região</label><input id="emp-regiao" readonly placeholder="Preenchido automaticamente pelo Estado" style="background:var(--bg3);color:var(--text2);font-weight:500;"></div>
             <div class="form-group full"><label>Endereço Completo</label><input id="emp-endereco" placeholder="Endereço completo (opcional)"></div>
             <div class="form-group"><label>Criado em</label><input id="emp-criado" readonly></div>
             <div class="form-group"><label>Atualizado em</label><input id="emp-alterado" readonly></div>
@@ -2629,8 +2630,33 @@ async function buscaCEP() {
       document.getElementById('emp-bairro').value = d.bairro || '';
       document.getElementById('emp-cidade').value = d.localidade || '';
       document.getElementById('emp-uf').value = d.uf || '';
+      autoPreencherRegiao();
     }
   } catch(e) {}
+}
+
+// Mapa UF → Região
+const _UF_REGIAO = {
+  AC:'Norte', AM:'Norte', AP:'Norte', PA:'Norte', RO:'Norte', RR:'Norte', TO:'Norte',
+  AL:'Nordeste', BA:'Nordeste', CE:'Nordeste', MA:'Nordeste', PB:'Nordeste',
+  PE:'Nordeste', PI:'Nordeste', RN:'Nordeste', SE:'Nordeste',
+  DF:'Centro-Oeste', GO:'Centro-Oeste', MT:'Centro-Oeste', MS:'Centro-Oeste',
+  ES:'Sudeste', MG:'Sudeste', RJ:'Sudeste', SP:'Sudeste',
+  PR:'Sul', RS:'Sul', SC:'Sul'
+};
+
+function autoPreencherRegiao() {
+  const uf  = document.getElementById('emp-uf').value;
+  const reg = _UF_REGIAO[uf] || '';
+  const el  = document.getElementById('emp-regiao');
+  if (!el) return;
+  el.value = reg;
+  // Feedback visual ao preencher
+  if (reg) {
+    el.style.color = 'var(--success)';
+    el.style.fontWeight = '600';
+    setTimeout(() => { el.style.color = 'var(--text2)'; el.style.fontWeight = '500'; }, 1200);
+  }
 }
 
 // =============== SIDEBAR / NAVIGATION ===============
@@ -2947,13 +2973,14 @@ function showEmpForm(record = null) {
     f('emp-atividade', record.atividade);
     f('emp-cep', record.cep); f('emp-logradouro', record.logradouro);
     f('emp-bairro', record.bairro); f('emp-cidade', record.cidade);
-    f('emp-uf', record.estado); f('emp-telefone', record.telefone); f('emp-email', record.email);
+    f('emp-uf', record.estado); f('emp-regiao', record.regiao||_UF_REGIAO[record.estado]||'');
+    f('emp-telefone', record.telefone); f('emp-email', record.email);
     f('emp-responsavel', record.responsavel); f('emp-endereco', record.endereco);
     f('emp-criado', fmtDate(record.criado_em)); f('emp-alterado', fmtDate(record.atualizado_em));
     f('emp-criado-por', record.criado_por||''); f('emp-alterado-por', record.atualizado_por||'');
   } else {
     ['emp-nr','emp-razao','emp-fantasia','emp-cnpj','emp-cep','emp-logradouro',
-     'emp-bairro','emp-cidade','emp-uf','emp-telefone','emp-email','emp-responsavel',
+     'emp-bairro','emp-cidade','emp-uf','emp-regiao','emp-telefone','emp-email','emp-responsavel',
      'emp-endereco','emp-criado','emp-alterado','emp-atividade','emp-criado-por','emp-alterado-por'].forEach(id=>f(id));
     f('emp-filial','Matriz');
   }
@@ -2991,6 +3018,7 @@ async function saveEmpresa() {
     bairro: document.getElementById('emp-bairro').value,
     cidade: document.getElementById('emp-cidade').value,
     estado: document.getElementById('emp-uf').value,
+    regiao: document.getElementById('emp-regiao').value,
     telefone: document.getElementById('emp-telefone').value,
     email: document.getElementById('emp-email').value,
     responsavel: document.getElementById('emp-responsavel').value,
@@ -3570,9 +3598,9 @@ const exportSchemas = {
   empresas: {
     table: 'empresas',
     fields: ['nr_registro','razao','fantasia','cnpj','filial','atividade','responsavel','telefone','email',
-      'cep','logradouro','bairro','cidade','estado','endereco','criado_em','atualizado_em'],
+      'cep','logradouro','bairro','cidade','estado','regiao','endereco','criado_em','atualizado_em'],
     labels: ['Nº de Registro','Razão Social','Nome Fantasia','CNPJ','Filial','Atividade','Responsável','Telefone','E-mail',
-      'CEP','Logradouro','Bairro','Cidade','Estado','Endereço Completo','Criado em','Atualizado em'],
+      'CEP','Logradouro','Bairro','Cidade','Estado','Região','Endereço Completo','Criado em','Atualizado em'],
   },
   cdc: {
     table: 'cdc',
