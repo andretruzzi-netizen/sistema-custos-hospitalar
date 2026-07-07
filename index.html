@@ -7237,21 +7237,38 @@ async function calcPreviewRateio() {
   const totalBase = Object.values(baseMap).reduce((s,v) => s+v, 0);
   const total = _rateioLancAtual.total;
 
-  // Monta preview
-  _rateioBaseDados = checks.map(c => {
+  // Monta preview — filtra apenas CDCs com base > 0
+  const temBaseDefinida = totalBase > 0;
+  let linhas = checks.map(c => {
     const base = baseMap[c.value] || 0;
-    const pct  = totalBase > 0 ? base / totalBase : 1 / checks.length;
-    return {
-      cdc_id:   c.value,
-      cdc_codigo: c.dataset.codigo,
-      cdc_nome:   c.dataset.nome,
-      base, pct,
-      valor: parseFloat((total * pct).toFixed(2))
-    };
-  }).sort((a,b) => b.base - a.base);
+    return { cdc_id: c.value, cdc_codigo: c.dataset.codigo, cdc_nome: c.dataset.nome, base, pct: 0, valor: 0 };
+  });
 
-  const fmtBRL = v => v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
-  const fmtPct = v => (v*100).toFixed(2)+'%';
+  // Remove CDCs sem base quando há base definida
+  if (temBaseDefinida) linhas = linhas.filter(r => r.base > 0);
+
+  if (!linhas.length) {
+    toast('Nenhum CDC com dados cadastrados para o período. Cadastre em Bases de Rateio → Metragem Ponderada.','error');
+    return;
+  }
+
+  // Calcula percentuais com ajuste no último item para evitar diferença de arredondamento
+  const totalBaseValido = linhas.reduce((s,r) => s+r.base, 0);
+  let somaValores = 0;
+  linhas.forEach((r, i) => {
+    r.pct = totalBaseValido > 0 ? r.base / totalBaseValido : 1 / linhas.length;
+    if (i < linhas.length - 1) {
+      r.valor = parseFloat((total * r.pct).toFixed(2));
+      somaValores += r.valor;
+    } else {
+      r.valor = parseFloat((total - somaValores).toFixed(2));
+    }
+  });
+
+  _rateioBaseDados = linhas.sort((a,b) => b.base - a.base);
+
+  const fmtBRL  = v => v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const fmtPct  = v => (v*100).toFixed(2)+'%';
   const fmtBase = v => (criterio === 'Metragem Ponderada' || criterio === 'Metragem M²') ? v.toFixed(2)+' m²' : criterio === 'Por Colaborador' ? v+' colab.' : '—';
 
   document.getElementById('modal-rateio-preview-tbody').innerHTML = [
@@ -7263,7 +7280,7 @@ async function calcPreviewRateio() {
         <td style="text-align:right;font-weight:600;color:var(--success);">R$ ${fmtBRL(r.valor)}</td>
       </tr>`),
     `<tr style="background:var(--bg3);border-top:2px solid var(--border);">
-      <td style="font-weight:700;">TOTAL</td>
+      <td style="font-weight:700;">TOTAL (${_rateioBaseDados.length} CDCs)</td>
       <td></td>
       <td style="text-align:right;font-weight:700;">100%</td>
       <td style="text-align:right;font-weight:700;color:var(--success);">R$ ${fmtBRL(total)}</td>
@@ -7275,46 +7292,50 @@ async function calcPreviewRateio() {
 async function confirmarRateioLanc() {
   if (!_rateioBaseDados.length) { toast('Calcule o preview primeiro','error'); return; }
 
+  // Fecha o modal imediatamente — feedback visual instantâneo
+  closeModal('modal-rateio-lanc');
+  toast('Gerando lançamentos...','info');
+
   try {
-    const criterio = _rateioLancAtual.info.criterio || '';
+    const _migracaoCriterio = { 'Metragem': 'Metragem Ponderada', 'metragem': 'Metragem Ponderada' };
+    let criterio = _rateioLancAtual.info.criterio || '';
+    if (_migracaoCriterio[criterio]) criterio = _migracaoCriterio[criterio];
     let ok = 0;
 
     for (const linha of _rateioBaseDados) {
-      // Para cada lançamento pai, cria um filho por CDC
+      if (linha.valor <= 0) continue; // segurança: nunca gera lançamento R$ 0,00
       for (const lancPai of _rateioLancAtual.lancs) {
         const valorFilho = parseFloat((parseFloat(lancPai.valor||0) * linha.pct).toFixed(2));
+        if (valorFilho <= 0) continue;
         const maxNr = await sbMaxNr('lancamentos');
         await sbPost('lancamentos', {
-          nr_registro: maxNr + 1,
-          empresa_id:  lancPai.empresa_id,
-          conta_id:    lancPai.conta_id,
-          cdc_id:      linha.cdc_id,
-          mes:         lancPai.mes,
-          ano:         lancPai.ano,
-          valor:       valorFilho,
-          tipo:        'Rateado',
-          lancamento_origem_id: lancPai.id,
+          nr_registro:              maxNr + 1,
+          empresa_id:               lancPai.empresa_id,
+          conta_id:                 lancPai.conta_id,
+          cdc_id:                   linha.cdc_id,
+          mes:                      lancPai.mes,
+          ano:                      lancPai.ano,
+          valor:                    valorFilho,
+          tipo:                     'Rateado',
+          lancamento_origem_id:     lancPai.id,
           criterio_rateio_aplicado: criterio,
-          percentual_rateio: parseFloat((linha.pct * 100).toFixed(4)),
-          src: 'rateio',
-          observacoes: `Rateado de: ${_rateioLancAtual.info.codigo||''} — ${_rateioLancAtual.info.descricao||''}`,
-          criado_em: Date.now(),
-          atualizado_em: Date.now()
+          percentual_rateio:        parseFloat((linha.pct * 100).toFixed(4)),
+          src:                      'rateio',
+          observacoes:              `Rateado de: ${_rateioLancAtual.info.codigo||''} — ${_rateioLancAtual.info.descricao||''}`,
+          criado_em:                Date.now(),
+          atualizado_em:            Date.now()
         });
         ok++;
       }
-      // Marca o lançamento pai como Distribuído
-      for (const lancPai of _rateioLancAtual.lancs) {
-        await sbPatch('lancamentos', lancPai.id, { tipo: 'Distribuído', atualizado_em: Date.now() });
-      }
     }
 
-    // Remove os lançamentos processados da fila
-    const contaIdProcessado = _rateioLancAtual.contaId;
-    _lancPendentesRateio = _lancPendentesRateio.filter(l => l.conta_id !== contaIdProcessado);
+    // Marca lançamentos pai como Distribuído
+    for (const lancPai of _rateioLancAtual.lancs) {
+      await sbPatch('lancamentos', lancPai.id, { tipo: 'Distribuído', atualizado_em: Date.now() });
+    }
 
-    toast(`Rateio concluído — ${ok} lançamentos gerados`,'success');
-    closeModal('modal-rateio-lanc');
+    _lancPendentesRateio = _lancPendentesRateio.filter(l => l.conta_id !== _rateioLancAtual.contaId);
+    toast(`✅ Rateio concluído — ${ok} lançamentos gerados`,'success');
     await loadLancamentos();
   } catch(e) { toast('Erro ao aplicar rateio: '+e.message,'error'); }
 }
