@@ -1148,6 +1148,7 @@
         <div class="toolbar">
           <input class="search-box" type="text" placeholder="🔍 Buscar conta..." oninput="filterTable('conta',this.value)">
           <button class="btn btn-primary" onclick="showContaForm()">+ Nova Conta</button>
+          <button class="btn btn-warning" id="btn-toggle-revisao-conta" style="display:none;" onclick="toggleFiltroRevisaoConta()"></button>
           <button class="btn btn-secondary" onclick="openImportModal('contas')">⬆ Importar</button>
           <button class="btn btn-secondary" onclick="openExportModal('contas')">⬇ Exportar</button>
         </div>
@@ -1172,6 +1173,7 @@
             <div class="form-actions-right" style="gap:6px;">
               <button class="btn btn-danger btn-sm" id="btn-del-conta" style="display:none;">🗑️ Excluir</button>
               <button class="btn btn-secondary btn-sm" id="btn-dup-conta" style="display:none;">📋 Duplicar</button>
+              <button class="btn btn-warning btn-sm" id="btn-next-pendente-conta" style="display:none;" onclick="proximaContaPendente()">➡ Próxima Pendente</button>
               <button class="btn btn-secondary" onclick="cancelContaForm()">Cancelar</button>
               <button class="btn btn-primary" onclick="saveConta()">💾 Salvar</button>
             </div>
@@ -1247,6 +1249,7 @@
             <div class="form-actions-right" style="gap:6px;">
               <button class="btn btn-danger btn-sm" id="btn-del-conta" style="display:none;">🗑️ Excluir</button>
               <button class="btn btn-secondary btn-sm" id="btn-dup-conta" style="display:none;">📋 Duplicar</button>
+              <button class="btn btn-warning btn-sm" id="btn-next-pendente-conta" style="display:none;" onclick="proximaContaPendente()">➡ Próxima Pendente</button>
               <button class="btn btn-secondary" onclick="cancelContaForm()">Cancelar</button>
               <button class="btn btn-primary" onclick="saveConta()">💾 Salvar</button>
             </div>
@@ -3750,17 +3753,43 @@ async function _populateCriterioRateioSelect(selId, currentVal) {
     sel.innerHTML += `<option value="${prev}" selected>${prev} (legado)</option>`;
   }
 }
+// Retorna true se a conta ainda não recebeu os campos novos da reformulação
+// (codigo_reduzido, classificacao ou categoria em branco) — usado na fila de revisão
+function _contaPrecisaRevisao(r) {
+  return !r.codigo_reduzido || !r.classificacao || !r.categoria;
+}
+let _contaFiltroRevisao = false;
 async function loadContas() {
   try {
     const data = await sbGet('conta_contabil');
     tableData.conta = data;
-    renderTable('conta', data);
+    const pendentes = data.filter(_contaPrecisaRevisao);
+    renderTable('conta', _contaFiltroRevisao ? pendentes : data);
     document.getElementById('conta-stats').innerHTML = `
       <div class="stat-card"><div class="s-label">Total</div><div class="s-value">${data.length}</div></div>
       <div class="stat-card"><div class="s-label">Ativas</div><div class="s-value">${data.filter(r=>r.status==='Ativa').length}</div></div>
       <div class="stat-card"><div class="s-label">Com Rateio</div><div class="s-value">${data.filter(r=>r.rateio==='Sim').length}</div></div>
+      <div class="stat-card" style="${pendentes.length ? 'border-color:#b45309;' : ''}">
+        <div class="s-label" style="${pendentes.length ? 'color:#b45309;' : ''}">Pendentes de Revisão</div>
+        <div class="s-value" style="${pendentes.length ? 'color:#b45309;' : ''}">${pendentes.length}</div>
+      </div>
     `;
+    const btn = document.getElementById('btn-toggle-revisao-conta');
+    if (btn) {
+      btn.textContent = _contaFiltroRevisao ? `↩ Ver Todas (${data.length})` : `🔍 Revisar Pendentes (${pendentes.length})`;
+      btn.style.display = (_contaFiltroRevisao || pendentes.length) ? '' : 'none';
+    }
   } catch(e) { toast('Erro ao carregar contas: '+e.message,'error'); }
+}
+function toggleFiltroRevisaoConta() {
+  _contaFiltroRevisao = !_contaFiltroRevisao;
+  loadContas();
+}
+// Pula para a próxima conta pendente de revisão a partir da lista atual (usado no formulário)
+function proximaContaPendente() {
+  const pendentes = tableData.conta.filter(_contaPrecisaRevisao).filter(r => String(r.id) !== String(contaEditId));
+  if (!pendentes.length) { toast('Nenhuma outra conta pendente de revisão 🎉','success'); return; }
+  showContaForm(pendentes[0]);
 }
 // Extrai o código do nível "pai" (sintético) a partir do código completo digitado.
 // Ex: 3.1.1.0004 -> pai é 3.1.1 (remove o último segmento)
@@ -3810,9 +3839,12 @@ async function populateCdcPadraoSelect(currentVal) {
   const sel = document.getElementById('conta-cdc-pad');
   if (!sel) return;
   try {
-    const cdcs = await sbGet('cdc', 'select=id,codigo_cdc,centro_custo,sigla,empresa_id&order=codigo_cdc.asc');
+    const cdcs = await sbGet('cdc', 'select=id,codigo_cdc,centro_custo,sigla,empresa_id');
+    const ordenados = [...cdcs].sort((a,b) =>
+      (a.centro_custo||a.sigla||'').localeCompare(b.centro_custo||b.sigla||'', 'pt-BR', {sensitivity:'base'})
+    );
     sel.innerHTML = '<option value="">Nenhum</option>' +
-      cdcs.map(c => `<option value="${c.id}">${c.codigo_cdc||''} — ${c.centro_custo||c.sigla||''}</option>`).join('');
+      ordenados.map(c => `<option value="${c.id}">${c.centro_custo||c.sigla||''}</option>`).join('');
     if (currentVal) sel.value = currentVal;
   } catch(e) { sel.innerHTML = '<option value="">Erro ao carregar</option>'; }
 }
@@ -3855,6 +3887,11 @@ async function showContaForm(record = null) {
     document.getElementById('conta-lancamento').style.color = '';
   }
   _setupFormEditBtns('btn-dup-conta','btn-del-conta', contaEditId, duplicarConta, deleteConta, 'Excluir esta conta?');
+  const outrasPendentes = contaEditId ? tableData.conta.filter(_contaPrecisaRevisao).filter(r => String(r.id) !== String(contaEditId)) : [];
+  document.querySelectorAll('#btn-next-pendente-conta').forEach(btn => {
+    btn.style.display = outrasPendentes.length ? '' : 'none';
+    btn.textContent = `➡ Próxima Pendente (${outrasPendentes.length})`;
+  });
   document.getElementById('sec-contas').classList.add('editing');
 }
 function cancelContaForm() { document.getElementById('sec-contas').classList.remove('editing'); }
@@ -3901,6 +3938,13 @@ async function saveConta() {
   };
   try {
     if (contaEditId) {
+      // Contas antigas (cadastradas antes da reformulação) podem não ter código reduzido —
+      // atribui na primeira vez que a conta for revisada e salva
+      const codRedAtual = document.getElementById('conta-codigo-reduzido').value;
+      if (!codRedAtual) {
+        const existentes = await sbGet('conta_contabil', 'select=codigo_reduzido&order=codigo_reduzido.desc&limit=1');
+        body.codigo_reduzido = (existentes.length && existentes[0].codigo_reduzido) ? existentes[0].codigo_reduzido + 1 : 1;
+      }
       await sbPatch('conta_contabil', contaEditId, body);
       toast('Conta atualizada!','success');
       await loadContas();
