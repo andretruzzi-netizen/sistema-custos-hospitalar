@@ -929,7 +929,7 @@
             <div class="form-group"><label>Nome Fantasia</label><input id="emp-fantasia" placeholder="Nome fantasia"></div>
             <div class="form-group"><label>CNPJ <span class="req">*</span></label><input id="emp-cnpj" placeholder="00.000.000/0000-00" oninput="maskCNPJ(this)"></div>
             <div class="form-group"><label>Filial</label><select id="emp-filial"><option value="Matriz">Matriz</option><option value="Filial">Filial</option></select></div>
-            <div class="form-group"><label>Atividade</label><select id="emp-atividade"><option value="">Selecione</option><option>Hospital</option><option>Laboratório</option><option>Clínica</option><option>Ambulatório</option><option>SADT</option><option>Hemodiálise</option></select></div>
+            <div class="form-group"><label>Atividade</label><select id="emp-atividade"><option value="">Selecione</option><option>Ambulatório</option><option>Clínica</option><option>Hemodiálise</option><option>Hospital</option><option>Laboratório</option><option>SADT</option></select></div>
             <div class="form-group"><label>Responsável</label><input id="emp-responsavel" placeholder="Nome do responsável"></div>
             <div class="form-group"><label>Telefone</label><input id="emp-telefone" placeholder="(00) 00000-0000"></div>
             <div class="form-group"><label>E-mail</label><input id="emp-email" type="email" placeholder="contato@empresa.com.br"></div>
@@ -940,11 +940,11 @@
             <div class="form-group"><label>Cidade</label><input id="emp-cidade" placeholder="Cidade"></div>
             <div class="form-group"><label>Estado</label><select id="emp-uf" onchange="autoPreencherRegiao()">
               <option value="">Selecione</option>
-              <option>AC</option><option>AL</option><option>AP</option><option>AM</option><option>BA</option><option>CE</option>
-              <option>DF</option><option>ES</option><option>GO</option><option>MA</option><option>MT</option><option>MS</option>
-              <option>MG</option><option>PA</option><option>PB</option><option>PR</option><option>PE</option><option>PI</option>
-              <option>RJ</option><option>RN</option><option>RS</option><option>RO</option><option>RR</option><option>SC</option>
-              <option>SP</option><option>SE</option><option>TO</option>
+              <option>AC</option><option>AL</option><option>AM</option><option>AP</option><option>BA</option><option>CE</option>
+              <option>DF</option><option>ES</option><option>GO</option><option>MA</option><option>MG</option><option>MS</option>
+              <option>MT</option><option>PA</option><option>PB</option><option>PE</option><option>PI</option><option>PR</option>
+              <option>RJ</option><option>RN</option><option>RO</option><option>RR</option><option>RS</option><option>SC</option>
+              <option>SE</option><option>SP</option><option>TO</option>
             </select></div>
             <div class="form-group"><label>Região</label><input id="emp-regiao" readonly placeholder="Preenchido automaticamente pelo Estado" style="background:var(--bg3);color:var(--text2);font-weight:500;"></div>
             <div class="form-group full"><label>Observação</label><input id="emp-endereco" placeholder="Observações gerais sobre a empresa (opcional)"></div>
@@ -1023,8 +1023,8 @@
             <div class="form-group"><label>Grupo de Serviços</label>
               <select id="cdc-grupo-servico">
                 <option value="">Selecione</option>
-                <option>UTI</option><option>Internação</option><option>SADT</option>
-                <option>Laboratório</option><option>Centro Cirúrgico</option><option>Pronto Atendimento</option><option>N/A</option>
+                <option>Centro Cirúrgico</option><option>Internação</option><option>Laboratório</option>
+                <option>N/A</option><option>Pronto Atendimento</option><option>SADT</option><option>UTI</option>
               </select>
             </div>
             <div class="form-group"><label>Grupo CDC</label>
@@ -1047,7 +1047,7 @@
             <div class="form-group"><label>Tipo CDC</label>
               <select id="cdc-tipo">
                 <option value="">Selecione</option>
-                <option>Serviço</option><option>Adm/Apoio</option>
+                <option>Adm/Apoio</option><option>Serviço</option>
               </select>
             </div>
             <div class="form-group"><label>Unidade de Mensuração</label>
@@ -1058,9 +1058,9 @@
             <div class="form-group"><label>Característica</label>
               <select id="cdc-caracteristica">
                 <option value="">Selecione</option>
-                <option>Diária</option><option>Consulta</option><option>Procedimento</option>
-                <option>Exame</option><option>Cirurgia</option><option>Hora</option>
-                <option>N/A</option>
+                <option>Cirurgia</option><option>Consulta</option><option>Diária</option>
+                <option>Exame</option><option>Hora</option><option>N/A</option>
+                <option>Procedimento</option>
               </select>
             </div>
             <!-- Responsáveis -->
@@ -1325,66 +1325,66 @@
             <div class="form-group"><label>Cargo</label>
               <select id="colab-cargo">
                 <option value="">Selecione</option>
-                <option>Médico</option>
-                <option>Enfermeiro</option>
-                <option>Técnico de Enfermagem</option>
-                <option>Auxiliar de Enfermagem</option>
-                <option>Fisioterapeuta</option>
-                <option>Farmacêutico</option>
-                <option>Auxiliar de Farmácia</option>
-                <option>Nutricionista</option>
-                <option>Psicólogo</option>
-                <option>Assistente Social</option>
-                <option>Fonoaudiólogo</option>
-                <option>Técnico de Radiologia</option>
-                <option>Biomédico</option>
-                <option>Técnico de Laboratório</option>
-                <option>Bioquímico</option>
-                <option>Recepcionista</option>
-                <option>Auxiliar Administrativo</option>
                 <option>Analista Administrativo</option>
-                <option>Faturista</option>
+                <option>Assistente Social</option>
+                <option>Auxiliar Administrativo</option>
+                <option>Auxiliar de Enfermagem</option>
+                <option>Auxiliar de Farmácia</option>
                 <option>Auxiliar de Serviços Gerais</option>
-                <option>Técnico de Manutenção</option>
-                <option>Segurança</option>
-                <option>Gerente</option>
+                <option>Biomédico</option>
+                <option>Bioquímico</option>
                 <option>Coordenador</option>
-                <option>Supervisor</option>
                 <option>Diretor</option>
+                <option>Enfermeiro</option>
+                <option>Farmacêutico</option>
+                <option>Faturista</option>
+                <option>Fisioterapeuta</option>
+                <option>Fonoaudiólogo</option>
+                <option>Gerente</option>
+                <option>Médico</option>
+                <option>Nutricionista</option>
                 <option>Outro</option>
+                <option>Psicólogo</option>
+                <option>Recepcionista</option>
+                <option>Segurança</option>
+                <option>Supervisor</option>
+                <option>Técnico de Enfermagem</option>
+                <option>Técnico de Laboratório</option>
+                <option>Técnico de Manutenção</option>
+                <option>Técnico de Radiologia</option>
               </select>
             </div>
             <div class="form-group"><label>Grupo de Função</label>
               <select id="colab-grupo-funcao">
                 <option value="">Selecione</option>
-                <option>Farmacêutico</option>
-                <option>Técnico de Enfermagem</option>
-                <option>Enfermeiro</option>
-                <option>Psicólogo</option>
-                <option>Assistente</option>
                 <option>ADM</option>
+                <option>Assistente</option>
+                <option>Enfermeiro</option>
+                <option>Farmacêutico</option>
+                <option>Psicólogo</option>
+                <option>Técnico de Enfermagem</option>
               </select>
             </div>
             <div class="form-group"><label>Tipo de Atendimento</label>
               <select id="colab-tipo-atendimento">
                 <option value="">Selecione</option>
+                <option>Administrativo</option>
+                <option>CCIH</option>
                 <option>Internação</option>
                 <option>PA</option>
-                <option>CCIH</option>
-                <option>Administrativo</option>
               </select>
             </div>
             <div class="form-group"><label>Vínculo</label>
               <select id="colab-vinculo">
                 <option value="">Selecione</option>
-                <option>CLT</option><option>PJ</option><option>Temporário</option>
-                <option>Estagiário</option><option>Terceirizado</option>
+                <option>CLT</option><option>Estagiário</option><option>PJ</option>
+                <option>Temporário</option><option>Terceirizado</option>
               </select>
             </div>
             <div class="form-group"><label>Tipo Vínculo</label>
               <select id="colab-tipo-vinculo">
                 <option value="">Selecione</option>
-                <option>CLT</option><option>Aprendiz</option><option>PDC</option>
+                <option>Aprendiz</option><option>CLT</option><option>PDC</option>
               </select>
             </div>
             <div class="form-group"><label>Salário Base (R$)</label><input id="colab-salario" type="number" step="0.01" placeholder="0,00"></div>
@@ -1586,16 +1586,22 @@
             <div class="form-group"><label>Subtipo</label>
               <select id="est-serv-subtipo"><option value="">Selecione o Tipo primeiro</option></select>
             </div>
-            <div class="form-group"><label>Nome / Descrição <span class="req">*</span></label>
-              <input id="est-serv-nome" placeholder="Ex: Sala 1, Leito 01, TC 01">
+            <!-- Identificação do espaço: Quarto/Sala (sempre) + Leito/Box (só tipos com leito) -->
+            <div class="form-group" id="grp-quarto-sala">
+              <label>Quarto / Sala <span class="req">*</span></label>
+              <select id="est-serv-quarto-sala"><option value="">Selecione</option></select>
+            </div>
+            <div class="form-group" id="grp-leito-box" style="display:none;">
+              <label>Leito / Box <span class="req">*</span></label>
+              <select id="est-serv-leito-box"><option value="">Selecione</option></select>
             </div>
             <!-- Campos condicionais: Internação / UTI -->
             <div class="form-group" id="grp-tipo-acomodacao" style="display:none;">
               <label>Tipo de Acomodação</label>
               <select id="est-serv-tipo-acomodacao">
                 <option value="">Selecione</option>
-                <option>Enfermaria</option>
                 <option>Apartamento</option>
+                <option>Enfermaria</option>
                 <option>Isolamento</option>
               </select>
             </div>
@@ -1934,6 +1940,8 @@
               <option value="subclasse_conta">Subclasse / Elemento (Nível 3)</option>
               <option value="indicador_financeiro">Indicador Financeiro</option>
               <option value="categoria_conta">Categoria</option>
+              <option value="quartos_salas">Quarto / Sala</option>
+              <option value="leitos_boxes">Leito / Box</option>
             </select>
           </div>
         </div>
@@ -3684,6 +3692,7 @@ async function showCdcForm(record = null) {
   document.getElementById('cdc-form-title').textContent = record ? '✏️ Editar CDC' : '➕ Novo Centro de Custos';
   try {
     const emps = await sbGet('empresas','select=id,razao');
+  emps.sort((a,b) => (a.razao||'').localeCompare(b.razao||'', 'pt-BR', {sensitivity:'base'}));
     const sel = document.getElementById('cdc-empresa');
     sel.innerHTML = '<option value="">Selecione</option>' + emps.map(e=>`<option value="${e.id}">${e.razao}</option>`).join('');
     const f = (id, val='') => { const el = document.getElementById(id); if(el) el.value = (val===null||val===undefined)?'':val; };
@@ -4239,6 +4248,7 @@ async function showColabForm(record = null) {
   colabEditId = record ? record.id : null;
   document.getElementById('colab-form-title').textContent = record ? '✏️ Editar Colaborador' : '➕ Novo Colaborador';
   const emps = await sbGet('empresas','select=id,razao');
+  emps.sort((a,b) => (a.razao||'').localeCompare(b.razao||'', 'pt-BR', {sensitivity:'base'}));
   const empSel = document.getElementById('colab-empresa');
   empSel.innerHTML = '<option value="">Selecione</option>' + emps.map(e=>`<option value="${e.id}">${e.razao}</option>`).join('');
   const f = (id, val='') => { const el = document.getElementById(id); if(el) el.value = (val===null||val===undefined)?'':val; };
@@ -4413,6 +4423,7 @@ let _empsCache = [];
 // Popula o select de Empresas do formulário de Atendimentos
 async function loadEmpresasAtend() {
   const emps = await sbGet('empresas','select=id,razao');
+  emps.sort((a,b) => (a.razao||'').localeCompare(b.razao||'', 'pt-BR', {sensitivity:'base'}));
   const sel = document.getElementById('atend-empresa');
   const current = sel.value;
   sel.innerHTML = '<option value="">Selecione</option>' +
@@ -4758,10 +4769,10 @@ const exportSchemas = {
   },
   est_serv: {
     table: 'estrutura_servicos',
-    fields: ['nr_registro','classificacao_cdc','empresa_nome','cdc_codigo','cdc_nome','tipo','subtipo','nome',
+    fields: ['nr_registro','classificacao_cdc','empresa_nome','cdc_codigo','cdc_nome','tipo','subtipo','quarto_sala','leito_box','nome',
       'tipo_acomodacao','quantidade_leitos',
       'vigencia_inicio','vigencia_fim','status','observacoes','criado_em','atualizado_em'],
-    labels: ['Nº de Registro','Classificação CDC','Empresa','Cód. CDC','CDC','Tipo','Subtipo','Nome / Descrição',
+    labels: ['Nº de Registro','Classificação CDC','Empresa','Cód. CDC','CDC','Tipo','Subtipo','Quarto / Sala','Leito / Box','Nome / Descrição',
       'Tipo de Acomodação','Qtd. Leitos',
       'Vigência Início','Vigência Fim','Status','Observações','Criado em','Atualizado em'],
     lookups: {
@@ -4811,6 +4822,7 @@ async function doExport() {
     if (schema.lookups) {
       if (schema.lookups.empresa_id) {
         const emps = await sbGet('empresas','select=id,razao');
+  emps.sort((a,b) => (a.razao||'').localeCompare(b.razao||'', 'pt-BR', {sensitivity:'base'}));
         emps.forEach(e => empMap[e.id] = e.razao);
       }
       if (schema.lookups.cdc_id) {
@@ -4909,6 +4921,7 @@ async function doImport() {
   if (schema && schema.lookups) {
     if (schema.lookups.empresa_id) {
       const emps = await sbGet('empresas','select=id,razao');
+  emps.sort((a,b) => (a.razao||'').localeCompare(b.razao||'', 'pt-BR', {sensitivity:'base'}));
       emps.forEach(e => empByName[(e.razao||'').trim().toLowerCase()] = e.id);
     }
     if (schema.lookups.cdc_id) {
@@ -5104,6 +5117,7 @@ let _unidMensCache = [];
 async function loadUnidMensOptions() {
   try {
     const data = await sbGet('unidades_mensuracao', 'status=eq.Ativo');
+    data.sort((a,b) => (a.nome||'').localeCompare(b.nome||'', 'pt-BR', {sensitivity:'base'}));
     _unidMensCache = data;
     return data;
   } catch(e) { return []; }
@@ -5537,6 +5551,7 @@ async function showCapGeralForm(record = null) {
   document.getElementById('cap-geral-fim').innerHTML    = optsHora;
   // Carrega empresas
   const emps = await sbGet('empresas','select=id,razao');
+  emps.sort((a,b) => (a.razao||'').localeCompare(b.razao||'', 'pt-BR', {sensitivity:'base'}));
   const empSel = document.getElementById('cap-geral-empresa');
   empSel.innerHTML = '<option value="">Selecione</option>' +
     emps.map(e => `<option value="${e.id}">${e.razao}</option>`).join('');
@@ -5657,6 +5672,10 @@ const _tiposByClassif = {
   ]
 };
 
+// Tipos cuja unidade de identificação é o Leito/Box (dentro de um Quarto/Sala).
+// Os demais tipos usam apenas Quarto/Sala como identificador do espaço físico.
+const _tiposComLeito = ['UTI', 'Internação', 'Pronto Atendimento'];
+
 const _subtiposByTipo = {
   // Serviço
   'Centro Cirúrgico':    ['Sala Cirúrgica','Sala de Recuperação','Sala de Preparo'],
@@ -5742,11 +5761,14 @@ function onEstServTipoChange() {
     [...opcs].sort((a,b)=>a.localeCompare(b,'pt-BR',{sensitivity:'base'})).map(s=>`<option>${s}</option>`).join('');
   // Campos condicionais (só para Serviço)
   const isInternacao = tipo === 'Internação';
-  const hasLeitos    = tipo === 'Internação' || tipo === 'UTI';
+  const hasLeitos    = _tiposComLeito.includes(tipo);
   document.getElementById('grp-tipo-acomodacao').style.display = isInternacao ? '' : 'none';
   document.getElementById('grp-qtd-leitos').style.display      = hasLeitos    ? '' : 'none';
   if (!isInternacao) document.getElementById('est-serv-tipo-acomodacao').value = '';
   if (!hasLeitos)    document.getElementById('est-serv-qtd-leitos').value = '';
+  // Quarto/Sala aparece sempre; Leito/Box só para tipos com granularidade de leito
+  document.getElementById('grp-leito-box').style.display = hasLeitos ? '' : 'none';
+  if (!hasLeitos) document.getElementById('est-serv-leito-box').value = '';
 }
 
 function syncVigenciaEstServ(part) {
@@ -5817,10 +5839,15 @@ async function showEstServForm(record = null) {
   document.getElementById('est-serv-form-title').textContent =
     record ? '✏️ Editar Registro — Estrutura' : '➕ Novo Registro — Estrutura';
   const emps = await sbGet('empresas','select=id,razao');
+  emps.sort((a,b) => (a.razao||'').localeCompare(b.razao||'', 'pt-BR', {sensitivity:'base'}));
   const empSel = document.getElementById('est-serv-empresa');
   empSel.innerHTML = '<option value="">Selecione</option>' +
     emps.map(e => `<option value="${e.id}">${e.razao}</option>`).join('');
   await _populateClassificacaoEstServ(record ? record.classificacao_cdc : '');
+  await Promise.all([
+    populateListAuxSelect('quartos_salas','est-serv-quarto-sala', record ? record.quarto_sala : ''),
+    populateListAuxSelect('leitos_boxes','est-serv-leito-box', record ? record.leito_box : '')
+  ]);
   const f = (id, val='') => { const el=document.getElementById(id); if(el) el.value=(val===null||val===undefined)?'':val; };
   if (record) {
     f('est-serv-nr', record.nr_registro);
@@ -5833,7 +5860,8 @@ async function showEstServForm(record = null) {
     f('est-serv-tipo', record.tipo);
     onEstServTipoChange();
     f('est-serv-subtipo', record.subtipo);
-    f('est-serv-nome', record.nome);
+    f('est-serv-quarto-sala', record.quarto_sala);
+    f('est-serv-leito-box', record.leito_box);
     f('est-serv-tipo-acomodacao', record.tipo_acomodacao);
     f('est-serv-qtd-leitos', record.quantidade_leitos);
     f('est-serv-vig-inicio', (record.vigencia_inicio_mes && record.vigencia_inicio_ano)
@@ -5851,14 +5879,16 @@ async function showEstServForm(record = null) {
     f('est-serv-criado-por', record.criado_por||'');
     f('est-serv-alterado-por', record.atualizado_por||'');
   } else {
-    ['est-serv-nr','est-serv-nome','est-serv-tipo-acomodacao','est-serv-qtd-leitos',
+    ['est-serv-nr','est-serv-tipo-acomodacao','est-serv-qtd-leitos',
      'est-serv-obs','est-serv-criado','est-serv-atualizado','est-serv-criado-por','est-serv-alterado-por'].forEach(id=>f(id));
     f('est-serv-classificacao',''); f('est-serv-tipo',''); f('est-serv-subtipo',''); f('est-serv-status','Ativo');
+    f('est-serv-quarto-sala',''); f('est-serv-leito-box','');
     document.getElementById('est-serv-cdc').innerHTML = '<option value="">Selecione a classificação</option>';
     document.getElementById('est-serv-tipo').innerHTML = '<option value="">Selecione a classificação</option>';
     document.getElementById('est-serv-subtipo').innerHTML = '<option value="">Selecione o Tipo primeiro</option>';
     document.getElementById('grp-tipo-acomodacao').style.display = 'none';
     document.getElementById('grp-qtd-leitos').style.display = 'none';
+    document.getElementById('grp-leito-box').style.display = 'none';
     const hoje = new Date().toISOString().slice(0,7)+'-01';
     f('est-serv-vig-inicio', hoje);
     syncVigenciaEstServ('inicio');
@@ -5879,18 +5909,28 @@ async function saveEstServ() {
   const classificacao_cdc = document.getElementById('est-serv-classificacao').value;
   const cdc_id     = document.getElementById('est-serv-cdc').value;
   const tipo       = document.getElementById('est-serv-tipo').value;
-  const nome       = document.getElementById('est-serv-nome').value.trim();
+  const quartoSala = document.getElementById('est-serv-quarto-sala').value;
+  const leitoBox   = document.getElementById('est-serv-leito-box').value;
+  const hasLeitos  = _tiposComLeito.includes(tipo);
   const vig_ini_mes = document.getElementById('est-serv-vig-inicio-mes').value;
   const vig_ini_ano = document.getElementById('est-serv-vig-inicio-ano').value;
-  if (!empresa_id||!classificacao_cdc||!cdc_id||!tipo||!nome||!vig_ini_mes||!vig_ini_ano) {
-    toast('Preencha os campos obrigatórios (Empresa, Classificação, CDC, Tipo, Nome, Vigência Início)','error'); return;
+  if (!empresa_id||!classificacao_cdc||!cdc_id||!tipo||!quartoSala||!vig_ini_mes||!vig_ini_ano) {
+    toast('Preencha os campos obrigatórios (Empresa, Classificação, CDC, Tipo, Quarto/Sala, Vigência Início)','error'); return;
   }
+  if (hasLeitos && !leitoBox) {
+    toast('Para este Tipo, selecione também o Leito/Box','error'); return;
+  }
+  // Nome é montado automaticamente a partir da combinação escolhida, mantendo
+  // compatibilidade com tabela, export e demais telas que exibem "nome"
+  const nome = hasLeitos ? `${quartoSala} — ${leitoBox}` : quartoSala;
   const qtdLeitos = document.getElementById('est-serv-qtd-leitos').value;
   const body = {
     empresa_id, cdc_id,
     classificacao_cdc,
     tipo,
     subtipo: document.getElementById('est-serv-subtipo').value,
+    quarto_sala: quartoSala,
+    leito_box: hasLeitos ? leitoBox : null,
     nome,
     tipo_acomodacao: document.getElementById('est-serv-tipo-acomodacao').value,
     quantidade_leitos: qtdLeitos !== '' ? parseInt(qtdLeitos) : null,
@@ -5940,6 +5980,7 @@ let _classifCdcCache = []; // cache para dropdowns
 async function loadClassifCdcOptions() {
   try {
     const data = await sbGet('classificacao_cdc', 'status=eq.Ativo');
+    data.sort((a,b) => (a.classificacao||'').localeCompare(b.classificacao||'', 'pt-BR', {sensitivity:'base'}));
     _classifCdcCache = data;
     return data;
   } catch(e) { return []; }
@@ -6046,7 +6087,7 @@ async function deleteClassCdc(id) {
   });
 }
 
-// =============== LISTAS AUXILIARES (Classificação de Custo / Subgrupo / Subclasse / Indicador Financeiro / Categoria) ===============
+// =============== LISTAS AUXILIARES (Classificação de Custo / Subgrupo / Subclasse / Indicador Financeiro / Categoria / Quarto-Sala / Leito-Box) ===============
 let listAuxEditId = null;
 const _listAuxTabelas = {
   classificacao_custo: { label: 'Classificação de Custo', itemLabel: 'Classificação de Custo' },
@@ -6054,6 +6095,8 @@ const _listAuxTabelas = {
   subclasse_conta:      { label: 'Subclasse / Elemento (Nível 3)', itemLabel: 'Subclasse / Elemento' },
   indicador_financeiro: { label: 'Indicador Financeiro',    itemLabel: 'Indicador Financeiro' },
   categoria_conta:      { label: 'Categoria',                itemLabel: 'Categoria' },
+  quartos_salas:        { label: 'Quarto / Sala',            itemLabel: 'Quarto / Sala' },
+  leitos_boxes:         { label: 'Leito / Box',              itemLabel: 'Leito / Box' },
 };
 // Cache por tabela, para popular os dropdowns do formulário de Conta Contábil
 const _listAuxCache = {};
@@ -6423,6 +6466,7 @@ async function showCapCcForm(record = null) {
     record ? '✏️ Editar Sala — Centro Cirúrgico' : '➕ Nova Sala — Centro Cirúrgico';
 
   const emps = await sbGet('empresas','select=id,razao');
+  emps.sort((a,b) => (a.razao||'').localeCompare(b.razao||'', 'pt-BR', {sensitivity:'base'}));
   const empSel = document.getElementById('cap-cc-empresa');
   empSel.innerHTML = '<option value="">Selecione</option>' +
     emps.map(e=>`<option value="${e.id}">${e.razao}</option>`).join('');
@@ -7360,6 +7404,7 @@ async function showRatMetForm(record = null) {
     record ? '✏️ Editar Registro — Metragem Ponderada' : '➕ Novo Registro — Metragem Ponderada';
 
   const emps = await sbGet('empresas','select=id,razao');
+  emps.sort((a,b) => (a.razao||'').localeCompare(b.razao||'', 'pt-BR', {sensitivity:'base'}));
   const empSel = document.getElementById('rat-met-empresa');
   empSel.innerHTML = '<option value="">Selecione</option>' +
     emps.map(e=>`<option value="${e.id}">${e.razao}</option>`).join('');
@@ -7531,6 +7576,7 @@ async function _simCarregarContas() {
 async function _simCarregarEmpresas() {
   try {
     const emps = await sbGet('empresas','select=id,razao');
+  emps.sort((a,b) => (a.razao||'').localeCompare(b.razao||'', 'pt-BR', {sensitivity:'base'}));
     const sel = document.getElementById('sim-empresa');
     sel.innerHTML = '<option value="">Selecione a empresa</option>' +
       emps.map(e => `<option value="${e.id}">${e.razao}</option>`).join('');
@@ -7798,6 +7844,7 @@ let _ratCdcResultado = null;
 async function loadRatCdcEmpresas() {
   try {
     const emps = await sbGet('empresas','select=id,razao');
+  emps.sort((a,b) => (a.razao||'').localeCompare(b.razao||'', 'pt-BR', {sensitivity:'base'}));
     const sel = document.getElementById('ratcdc-empresa');
     sel.innerHTML = '<option value="">Selecione</option>' + emps.map(e=>`<option value="${e.id}">${e.razao}</option>`).join('');
     document.getElementById('ratcdc-resultado-wrap').style.display = 'none';
@@ -8268,6 +8315,7 @@ async function showLancForm(record = null) {
     record ? '✏️ Editar Lançamento' : '➕ Novo Lançamento';
 
   const emps = await sbGet('empresas','select=id,razao');
+  emps.sort((a,b) => (a.razao||'').localeCompare(b.razao||'', 'pt-BR', {sensitivity:'base'}));
   const empSel = document.getElementById('lanc-empresa');
   empSel.innerHTML = '<option value="">Selecione</option>' +
     emps.map(e => `<option value="${e.id}">${e.razao}</option>`).join('');
