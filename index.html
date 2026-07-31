@@ -893,12 +893,14 @@
           <button class="btn btn-primary" onclick="showEmpForm()">+ Nova Empresa</button>
           <button class="btn btn-secondary" onclick="openImportModal('empresas')">⬆ Importar</button>
           <button class="btn btn-secondary" onclick="openExportModal('empresas')">⬇ Exportar</button>
+          <button class="btn btn-danger btn-sm" id="btn-bulk-del-emp" style="display:none;" onclick="bulkDelete('emp')">🗑️ Excluir Selecionados</button>
         </div>
         <div style="display:flex;justify-content:flex-end;margin-bottom:8px;"><span style="font-size:12px;color:var(--text2);font-weight:600;" id="emp-result-count"></span></div>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
+                <th style="width:36px;text-align:center;"><input type="checkbox" id="cb-emp-all" onchange="_toggleAllCheckbox('emp',this.checked)" style="accent-color:#1a1a1a;cursor:pointer;"></th>
                 <th>Nº Reg.</th><th>Razão Social</th><th>CNPJ</th><th>Filial</th><th>Atividade</th><th>Cidade</th><th>UF</th><th>Ações</th>
               </tr>
             </thead>
@@ -979,12 +981,13 @@
           <button class="btn btn-primary" onclick="showCdcForm()">+ Novo CDC</button>
           <button class="btn btn-secondary" onclick="openImportModal('cdc')">⬆ Importar</button>
           <button class="btn btn-secondary" onclick="openExportModal('cdc')">⬇ Exportar</button>
+          <button class="btn btn-danger btn-sm" id="btn-bulk-del-cdc" style="display:none;" onclick="bulkDelete('cdc')">🗑️ Excluir Selecionados</button>
         </div>
         <div style="display:flex;justify-content:flex-end;margin-bottom:8px;"><span style="font-size:12px;color:var(--text2);font-weight:600;" id="cdc-result-count"></span></div>
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Nº</th><th>Cód. CDC</th><th>Centro de Custo</th><th>Empresa</th><th>Tipo</th><th>Status</th><th>Status de Atualização</th><th>Ações</th></tr>
+              <tr><th style="width:36px;text-align:center;"><input type="checkbox" id="cb-cdc-all" onchange="_toggleAllCheckbox('cdc',this.checked)" style="accent-color:#1a1a1a;cursor:pointer;"></th><th>Nº</th><th>Cód. CDC</th><th>Centro de Custo</th><th>Empresa</th><th>Classificação</th><th>Status</th><th>Status de Atualização</th><th>Ações</th></tr>
             </thead>
             <tbody id="cdc-tbody"></tbody>
           </table>
@@ -1127,6 +1130,7 @@
           <button class="btn btn-warning" id="btn-toggle-revisao-conta" style="display:none;" onclick="toggleFiltroRevisaoConta()"></button>
           <button class="btn btn-secondary" onclick="openImportModal('contas')">⬆ Importar</button>
           <button class="btn btn-secondary" onclick="openExportModal('contas')">⬇ Exportar</button>
+          <button class="btn btn-danger btn-sm" id="btn-bulk-del-conta" style="display:none;" onclick="bulkDelete('conta')">🗑️ Excluir Selecionados</button>
         </div>
         <div class="panel" style="padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
@@ -1145,7 +1149,7 @@
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Nº</th><th>Código</th><th>Nível</th><th>Conta Contábil</th><th>Tipo</th><th>Classificação de Custo</th><th>Categoria</th><th>Subgrupo (Nível 2)</th><th>Subclasse / Elemento (Nível 3)</th><th>Rateio?</th><th>Taxa de Custos</th><th>Status</th><th>Ações</th></tr>
+              <tr><th style="width:36px;text-align:center;"><input type="checkbox" id="cb-conta-all" onchange="_toggleAllCheckbox('conta',this.checked)" style="accent-color:#1a1a1a;cursor:pointer;"></th><th>Nº</th><th>Código</th><th>Nível</th><th>Conta Contábil</th><th>Tipo</th><th>Classificação de Custo</th><th>Categoria</th><th>Subgrupo (Nível 2)</th><th>Subclasse / Elemento (Nível 3)</th><th>Rateio?</th><th>Taxa de Custos</th><th>Status</th><th>Ações</th></tr>
             </thead>
             <tbody id="conta-tbody"></tbody>
           </table>
@@ -1260,6 +1264,7 @@
           <button class="btn btn-warning" onclick="recalcularColaboradoresDoCdc()" title="Preenche Cód. CDC, Classificação, Grupo CDC e Grupo de Serviços a partir do cadastro atual do CDC">🔄 Recalcular do CDC</button>
           <button class="btn btn-secondary" onclick="openImportModal('colaboradores')">⬆ Importar</button>
           <button class="btn btn-secondary" onclick="openExportModal('colaboradores')">⬇ Exportar</button>
+          <button class="btn btn-danger btn-sm" id="btn-bulk-del-colab" style="display:none;" onclick="bulkDelete('colab')">🗑️ Excluir Selecionados</button>
         </div>
         <div style="display:flex;justify-content:flex-end;margin-bottom:8px;"><span style="font-size:12px;color:var(--text2);font-weight:600;" id="colab-result-count"></span></div>
         <div class="panel" style="padding:14px 16px;margin-bottom:16px;">
@@ -1286,7 +1291,7 @@
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Nº</th><th>Centro de Custos</th><th>Cargo</th><th>Grupo Função</th><th>Empresa</th><th>Tipo Vínculo</th><th>Período</th><th>Ações</th></tr>
+              <tr><th style="width:36px;text-align:center;"><input type="checkbox" id="cb-colab-all" onchange="_toggleAllCheckbox('colab',this.checked)" style="accent-color:#1a1a1a;cursor:pointer;"></th><th>Nº</th><th>Centro de Custos</th><th>Cargo</th><th>Grupo Função</th><th>Empresa</th><th>Tipo Vínculo</th><th>Período</th><th>Ações</th></tr>
             </thead>
             <tbody id="colab-tbody"></tbody>
           </table>
@@ -1426,6 +1431,7 @@
           <button class="btn btn-warning" onclick="recalcularAtendimentosDoCdc()" title="Preenche Tipo, Unidade de Mensuração, Taxa Padrão e Capacidade a partir do cadastro atual do CDC">🔄 Recalcular do CDC</button>
           <button class="btn btn-secondary" onclick="openImportModal('atendimentos')">⬆ Importar</button>
           <button class="btn btn-secondary" onclick="openExportModal('atendimentos')">⬇ Exportar</button>
+          <button class="btn btn-danger btn-sm" id="btn-bulk-del-atend" style="display:none;" onclick="bulkDelete('atend')">🗑️ Excluir Selecionados</button>
         </div>
         <div style="display:flex;justify-content:flex-end;margin-bottom:8px;"><span style="font-size:12px;color:var(--text2);font-weight:600;" id="atend-result-count"></span></div>
         <div class="panel" style="padding:14px 16px;margin-bottom:16px;">
@@ -1452,7 +1458,7 @@
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Nº</th><th>Empresa</th><th>CDC</th><th>Tipo</th><th>Período</th><th>Cap.Instalada</th><th>Qtde Atend.</th><th>Taxa Ocupação</th><th>Ações</th></tr>
+              <tr><th style="width:36px;text-align:center;"><input type="checkbox" id="cb-atend-all" onchange="_toggleAllCheckbox('atend',this.checked)" style="accent-color:#1a1a1a;cursor:pointer;"></th><th>Nº</th><th>Empresa</th><th>CDC</th><th>Tipo</th><th>Período</th><th>Cap.Instalada</th><th>Qtde Atend.</th><th>Taxa Ocupação</th><th>Ações</th></tr>
             </thead>
             <tbody id="atend-tbody"></tbody>
           </table>
@@ -1529,12 +1535,14 @@
           <button class="btn btn-primary" onclick="showEstServForm()">+ Novo Registro</button>
           <button class="btn btn-secondary" onclick="openImportModal('est_serv')">⬆ Importar</button>
           <button class="btn btn-secondary" onclick="openExportModal('est_serv')">⬇ Exportar</button>
+          <button class="btn btn-danger btn-sm" id="btn-bulk-del-estserv" style="display:none;" onclick="bulkDelete('estserv')">🗑️ Excluir Selecionados</button>
         </div>
         <div style="display:flex;justify-content:flex-end;margin-bottom:8px;"><span style="font-size:12px;color:var(--text2);font-weight:600;" id="estserv-result-count"></span></div>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
+                <th style="width:36px;text-align:center;"><input type="checkbox" id="cb-estserv-all" onchange="_toggleAllCheckbox('estserv',this.checked)" style="accent-color:#1a1a1a;cursor:pointer;"></th>
                 <th>Nº</th><th>Empresa</th><th>Classificação</th><th>CDC</th><th>Tipo</th>
                 <th>Nome / Descrição</th><th>Subtipo</th>
                 <th>Vigência Início</th><th>Status</th><th>Ações</th>
@@ -1661,6 +1669,7 @@
           <button class="btn btn-primary" onclick="showCapGeralForm()">+ Novo Registro</button>
           <button class="btn btn-secondary" onclick="openImportModal('cap_geral')">⬆ Importar</button>
           <button class="btn btn-secondary" onclick="openExportModal('cap_geral')">⬇ Exportar</button>
+          <button class="btn btn-danger btn-sm" id="btn-bulk-del-capgeral" style="display:none;" onclick="bulkDelete('capgeral')">🗑️ Excluir Selecionados</button>
         </div>
         <div style="display:flex;justify-content:flex-end;margin-bottom:8px;"><span style="font-size:12px;color:var(--text2);font-weight:600;" id="capgeral-result-count"></span></div>
         <div class="panel" style="padding:14px 16px;margin-bottom:16px;">
@@ -1688,6 +1697,7 @@
           <table>
             <thead>
               <tr>
+                <th style="width:36px;text-align:center;"><input type="checkbox" id="cb-capgeral-all" onchange="_toggleAllCheckbox('capgeral',this.checked)" style="accent-color:#1a1a1a;cursor:pointer;"></th>
                 <th>Nº</th><th>Empresa</th><th>CDC</th><th>Período</th>
                 <th>Dia da Semana</th><th>Início</th><th>Fim</th>
                 <th>Salas</th><th>Leitos</th><th>Colab.</th><th>Ações</th>
@@ -1803,12 +1813,13 @@
           <button class="btn btn-primary" onclick="showUnidMensForm()">+ Nova Unidade</button>
           <button class="btn btn-secondary" onclick="openImportModal('unid_mens')">⬆ Importar</button>
           <button class="btn btn-secondary" onclick="openExportModal('unid_mens')">⬇ Exportar</button>
+          <button class="btn btn-danger btn-sm" id="btn-bulk-del-unidmens" style="display:none;" onclick="bulkDelete('unidmens')">🗑️ Excluir Selecionados</button>
         </div>
         <div style="display:flex;justify-content:flex-end;margin-bottom:8px;"><span style="font-size:12px;color:var(--text2);font-weight:600;" id="unidmens-result-count"></span></div>
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Nº</th><th>Unidade de Mensuração</th><th>Observação</th><th>Status</th><th>Criado em</th><th>Alterado em</th><th>Ações</th></tr>
+              <tr><th style="width:36px;text-align:center;"><input type="checkbox" id="cb-unidmens-all" onchange="_toggleAllCheckbox('unidmens',this.checked)" style="accent-color:#1a1a1a;cursor:pointer;"></th><th>Nº</th><th>Unidade de Mensuração</th><th>Observação</th><th>Status</th><th>Criado em</th><th>Alterado em</th><th>Ações</th></tr>
             </thead>
             <tbody id="unid-mens-tbody"></tbody>
           </table>
@@ -1871,12 +1882,13 @@
           <button class="btn btn-primary" onclick="showClassCdcForm()">+ Nova Classificação</button>
           <button class="btn btn-secondary" onclick="openImportModal('class_cdc')">⬆ Importar</button>
           <button class="btn btn-secondary" onclick="openExportModal('class_cdc')">⬇ Exportar</button>
+          <button class="btn btn-danger btn-sm" id="btn-bulk-del-classcdc" style="display:none;" onclick="bulkDelete('classcdc')">🗑️ Excluir Selecionados</button>
         </div>
         <div style="display:flex;justify-content:flex-end;margin-bottom:8px;"><span style="font-size:12px;color:var(--text2);font-weight:600;" id="classcdc-result-count"></span></div>
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Nº</th><th>Código</th><th>Classificação CDC</th><th>Status</th><th>Criado em</th><th>Alterado em</th><th>Ações</th></tr>
+              <tr><th style="width:36px;text-align:center;"><input type="checkbox" id="cb-classcdc-all" onchange="_toggleAllCheckbox('classcdc',this.checked)" style="accent-color:#1a1a1a;cursor:pointer;"></th><th>Nº</th><th>Código</th><th>Classificação CDC</th><th>Status</th><th>Criado em</th><th>Alterado em</th><th>Ações</th></tr>
             </thead>
             <tbody id="class-cdc-tbody"></tbody>
           </table>
@@ -1951,12 +1963,13 @@
         <div class="toolbar">
           <input class="search-box" type="text" placeholder="🔍 Buscar..." oninput="filterTable('listaux',this.value)">
           <button class="btn btn-primary" onclick="showListAuxForm()">+ Novo Item</button>
+          <button class="btn btn-danger btn-sm" id="btn-bulk-del-listaux" style="display:none;" onclick="bulkDelete('listaux')">🗑️ Excluir Selecionados</button>
         </div>
         <div style="display:flex;justify-content:flex-end;margin-bottom:8px;"><span style="font-size:12px;color:var(--text2);font-weight:600;" id="listaux-result-count"></span></div>
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Nº</th><th>Código</th><th id="listaux-th-nome">Item</th><th>Status</th><th>Criado em</th><th>Alterado em</th><th>Ações</th></tr>
+              <tr><th style="width:36px;text-align:center;"><input type="checkbox" id="cb-listaux-all" onchange="_toggleAllCheckbox('listaux',this.checked)" style="accent-color:#1a1a1a;cursor:pointer;"></th><th>Nº</th><th>Código</th><th id="listaux-th-nome">Item</th><th>Status</th><th>Criado em</th><th>Alterado em</th><th>Ações</th></tr>
             </thead>
             <tbody id="listaux-tbody"></tbody>
           </table>
@@ -1969,6 +1982,7 @@
           <div class="form-actions" style="margin-top:0;padding-top:0;border-top:none;border-bottom:1px solid var(--border);padding-bottom:16px;margin-bottom:16px;">
             <div class="form-actions-right" style="gap:6px;">
               <button class="btn btn-danger btn-sm" id="btn-del-listaux" style="display:none;">🗑️ Excluir</button>
+              <button class="btn btn-secondary btn-sm" id="btn-dup-listaux" style="display:none;">📋 Duplicar</button>
               <button class="btn btn-secondary btn-sm" onclick="showListAuxForm()" title="Iniciar um novo registro">+ Novo(a)</button>
               <button class="btn btn-secondary" onclick="cancelListAuxForm()">Cancelar</button>
               <button class="btn btn-primary" onclick="saveListAux()">💾 Salvar</button>
@@ -1987,6 +2001,7 @@
           <div class="form-actions">
             <div class="form-actions-right" style="gap:6px;">
               <button class="btn btn-danger btn-sm" id="btn-del-listaux-b" style="display:none;">🗑️ Excluir</button>
+              <button class="btn btn-secondary btn-sm" id="btn-dup-listaux-b" style="display:none;">📋 Duplicar</button>
               <button class="btn btn-secondary btn-sm" onclick="showListAuxForm()" title="Iniciar um novo registro">+ Novo(a)</button>
               <button class="btn btn-secondary" onclick="cancelListAuxForm()">Cancelar</button>
               <button class="btn btn-primary" onclick="saveListAux()">💾 Salvar</button>
@@ -2005,6 +2020,7 @@
           <button class="btn btn-primary" onclick="showCapCcForm()">+ Nova Sala</button>
           <button class="btn btn-secondary" onclick="openImportModal('cap_cc')">⬆ Importar</button>
           <button class="btn btn-secondary" onclick="openExportModal('cap_cc')">⬇ Exportar</button>
+          <button class="btn btn-danger btn-sm" id="btn-bulk-del-capcc" style="display:none;" onclick="bulkDelete('capcc')">🗑️ Excluir Selecionados</button>
         </div>
         <div style="display:flex;justify-content:flex-end;margin-bottom:8px;"><span style="font-size:12px;color:var(--text2);font-weight:600;" id="capcc-result-count"></span></div>
         <div class="panel" style="padding:14px 16px;margin-bottom:16px;">
@@ -2032,6 +2048,7 @@
           <table>
             <thead>
               <tr>
+                <th style="width:36px;text-align:center;"><input type="checkbox" id="cb-capcc-all" onchange="_toggleAllCheckbox('capcc',this.checked)" style="accent-color:#1a1a1a;cursor:pointer;"></th>
                 <th>Nº</th><th>Empresa</th><th>Sala</th><th>Período</th>
                 <th>Horas Brutas</th><th>Redutores</th><th>Horas Líquidas</th><th>Ações</th>
               </tr>
@@ -2067,8 +2084,8 @@
             <div class="form-group"><label>Empresa <span class="req">*</span></label>
               <select id="cap-cc-empresa"><option value="">Selecione</option></select>
             </div>
-            <div class="form-group"><label>Nome da Sala <span class="req">*</span></label>
-              <input id="cap-cc-sala" placeholder="Ex: Sala 01">
+            <div class="form-group"><label>Sala Cirúrgica <span class="req">*</span></label>
+              <select id="cap-cc-sala"><option value="">Selecione</option></select>
             </div>
             <div class="form-group"><label>Período (Mês/Ano) <span class="req">*</span></label>
               <input id="cap-cc-periodo" type="date" onchange="syncPeriodoCapCc()">
@@ -2235,6 +2252,7 @@
           <button class="btn btn-primary" onclick="showRatMetForm()">+ Novo Registro</button>
           <button class="btn btn-secondary" onclick="openImportModal('rat_metragem')">⬆ Importar</button>
           <button class="btn btn-secondary" onclick="openExportModal('rat_metragem')">⬇ Exportar</button>
+          <button class="btn btn-danger btn-sm" id="btn-bulk-del-ratmet" style="display:none;" onclick="bulkDelete('ratmet')">🗑️ Excluir Selecionados</button>
         </div>
         <div style="display:flex;justify-content:flex-end;margin-bottom:8px;"><span style="font-size:12px;color:var(--text2);font-weight:600;" id="ratmet-result-count"></span></div>
         <!-- Filtro de período -->
@@ -2263,6 +2281,7 @@
           <table>
             <thead>
               <tr>
+                <th style="width:36px;text-align:center;"><input type="checkbox" id="cb-ratmet-all" onchange="_toggleAllCheckbox('ratmet',this.checked)" style="accent-color:#1a1a1a;cursor:pointer;"></th>
                 <th>Nº</th><th>Empresa</th><th>CDC</th><th>Período</th>
                 <th>Área Total (m²)</th>
                 <th>m² Crítica</th><th>m² Semicrítica</th><th>m² Não Crítica</th>
@@ -3133,6 +3152,110 @@ function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 function confirm2(msg, cb) { if (confirm(msg)) cb(); }
 
+// ===== TRAVA CONTRA CLIQUE DUPLO / DUPLICAÇÃO AO SALVAR =====
+// Problema real: funções save* fazem uma chamada assíncrona ao Supabase.
+// Se o usuário clicar 2x rapidamente (ou clicar de novo achando que travou),
+// a função roda 2x e cria 2 registros idênticos. _guardAsync garante que,
+// enquanto uma chamada de uma função nomeada estiver em andamento, cliques
+// repetidos são ignorados silenciosamente até ela terminar (sucesso ou erro).
+const _asyncLocks = new Set();
+function _guardAsync(lockName, fn) {
+  return async function(...args) {
+    if (_asyncLocks.has(lockName)) return; // já está salvando — ignora o clique repetido
+    _asyncLocks.add(lockName);
+    try {
+      return await fn.apply(this, args);
+    } finally {
+      _asyncLocks.delete(lockName);
+    }
+  };
+}
+
+// ===== SELEÇÃO MÚLTIPLA + EXCLUSÃO EM MASSA =====
+// Configuração por módulo: nome da tabela no Supabase + função para recarregar
+// a lista na tela depois de excluir. Usado por todo o fluxo de seleção/exclusão
+// em massa abaixo — qualquer cadastro novo só precisa de uma entrada aqui.
+const _bulkDeleteConfig = {
+  emp:      { table: 'empresas',            reload: () => loadEmpresas() },
+  cdc:      { table: 'cdc',                 reload: () => loadCdc() },
+  conta:    { table: 'conta_contabil',      reload: () => loadContas() },
+  colab:    { table: 'colaboradores',       reload: () => loadColaboradores() },
+  atend:    { table: 'atendimentos',        reload: () => loadAtendimentos() },
+  unidmens: { table: 'unidades_mensuracao', reload: () => { _unidMensCache = []; loadUnidMens(); } },
+  classcdc: { table: 'classificacao_cdc',   reload: () => { _classifCdcCache = []; loadClassCdc(); } },
+  listaux:  { table: null, reload: () => loadListAux() }, // tabela é dinâmica (ver _bulkDeleteTable)
+  estserv:  { table: 'estrutura_servicos',  reload: () => loadEstServ() },
+  capgeral: { table: 'capacidade_geral',    reload: () => loadCapGeral() },
+  capcc:    { table: 'capacidade_cc',       reload: () => loadCapCc() },
+  ratmet:   { table: 'rateio_metragem',     reload: () => loadRatMetragem() },
+};
+
+// Retorna a tabela real a usar para um dado key — trata o caso especial de
+// listaux, cuja tabela muda conforme o "Tipo de Lista" selecionado no dropdown
+function _bulkDeleteTable(key) {
+  if (key === 'listaux') return document.getElementById('listaux-tipo').value;
+  return _bulkDeleteConfig[key] && _bulkDeleteConfig[key].table;
+}
+
+// Guarda os IDs selecionados por tabela (Set para evitar duplicados)
+const _selectedRows = {};
+Object.keys(_bulkDeleteConfig).forEach(k => { _selectedRows[k] = new Set(); });
+
+// Chamado pelo checkbox "selecionar todos" do cabeçalho de cada tabela
+function _toggleAllCheckbox(key, checked) {
+  document.querySelectorAll(`.cb-row-select[data-key="${key}"]`).forEach(cb => {
+    cb.checked = checked;
+    if (checked) _selectedRows[key].add(cb.value);
+    else _selectedRows[key].delete(cb.value);
+  });
+  _updateBulkDeleteUI(key);
+}
+
+// Chamado por cada checkbox de linha individual
+function _onRowCheckboxChange(key) {
+  _selectedRows[key] = new Set(
+    Array.from(document.querySelectorAll(`.cb-row-select[data-key="${key}"]:checked`)).map(cb => cb.value)
+  );
+  // Atualiza o estado do checkbox "selecionar todos" (marcado só se TODOS estiverem marcados)
+  const all = document.querySelectorAll(`.cb-row-select[data-key="${key}"]`);
+  const allChecked = all.length > 0 && Array.from(all).every(cb => cb.checked);
+  const cbAll = document.getElementById(`cb-${key}-all`);
+  if (cbAll) cbAll.checked = allChecked;
+  _updateBulkDeleteUI(key);
+}
+
+// Mostra/esconde e atualiza o texto do botão "Excluir Selecionados" de um módulo
+function _updateBulkDeleteUI(key) {
+  const btn = document.getElementById(`btn-bulk-del-${key}`);
+  if (!btn) return;
+  const n = _selectedRows[key].size;
+  btn.style.display = n > 0 ? '' : 'none';
+  btn.textContent = `🗑️ Excluir Selecionados (${n})`;
+}
+
+// Executa a exclusão em massa dos itens marcados de um módulo. Confirma uma
+// única vez (não pede confirmação item a item), exclui sequencialmente e
+// recarrega a lista ao final — se algum item falhar, os demais continuam e
+// o total de erros é reportado no final, sem travar todo o processo.
+async function bulkDelete(key) {
+  const ids = Array.from(_selectedRows[key] || []);
+  if (!ids.length) { toast('Nenhum item selecionado','error'); return; }
+  const table = _bulkDeleteTable(key);
+  if (!table) { toast('Não foi possível identificar a tabela para excluir','error'); return; }
+  confirm2(`Excluir ${ids.length} registro(s) selecionado(s)? Esta ação não pode ser desfeita.`, async () => {
+    toast(`Excluindo ${ids.length} registro(s)...`,'info');
+    let ok = 0, err = 0;
+    for (const id of ids) {
+      try { await sbDelete(table, id); ok++; }
+      catch(e) { err++; }
+    }
+    _selectedRows[key].clear();
+    toast(err ? `${ok} excluído(s), ${err} erro(s)` : `${ok} registro(s) excluído(s) com sucesso`, err ? 'error' : 'success');
+    const cfg = _bulkDeleteConfig[key];
+    if (cfg && cfg.reload) cfg.reload();
+  });
+}
+
 // Valida a regra de senha do sistema: mínimo 8 caracteres, 1 maiúscula,
 // 1 número e 1 caractere especial. Retorna null se estiver válida,
 // ou uma mensagem de erro explicando o que falta.
@@ -3328,6 +3451,7 @@ function renderTable(key, data) {
   const tbody = document.getElementById(tbodyMap[key]);
   if (key === 'emp') tbody.innerHTML = data.map(r => `
     <tr ondblclick="editEmpresa('${r.id}')" title="Duplo clique para editar">
+      <td style="text-align:center;"><input type="checkbox" class="cb-row-select" data-key="emp" value="${r.id}" onclick="event.stopPropagation()" onchange="_onRowCheckboxChange('emp')"></td>
       <td class="mono">${r.nr_registro||''}</td>
       <td><strong>${r.razao||''}</strong><br><span class="text-sm">${r.fantasia||''}</span></td>
       <td class="mono">${r.cnpj||''}</td>
@@ -3341,6 +3465,7 @@ function renderTable(key, data) {
     </tr>`).join('');
   if (key === 'cdc') tbody.innerHTML = data.map(r => `
     <tr ondblclick="editCdc('${r.id}')" title="Duplo clique para editar">
+      <td style="text-align:center;"><input type="checkbox" class="cb-row-select" data-key="cdc" value="${r.id}" onclick="event.stopPropagation()" onchange="_onRowCheckboxChange('cdc')"></td>
       <td class="mono">${r.nr_registro}</td>
       <td class="mono">${r.codigo_cdc||''}</td>
       <td><strong>${r.centro_custo||r.sigla||''}</strong></td>
@@ -3357,6 +3482,7 @@ function renderTable(key, data) {
     const nivel = String(r.codigo||'').split('.').filter(Boolean).length;
     return `
     <tr ondblclick="editConta('${r.id}')" title="Duplo clique para editar">
+      <td style="text-align:center;"><input type="checkbox" class="cb-row-select" data-key="conta" value="${r.id}" onclick="event.stopPropagation()" onchange="_onRowCheckboxChange('conta')"></td>
       <td class="mono">${r.nr_registro}</td>
       <td class="mono">${r.codigo||''}</td>
       <td style="text-align:center;"><span class="badge badge-blue">${nivel||''}</span></td>
@@ -3378,6 +3504,7 @@ function renderTable(key, data) {
   }).join('');
   if (key === 'colab') tbody.innerHTML = data.map(r => `
     <tr ondblclick="editColab('${r.id}')" title="Duplo clique para editar">
+      <td style="text-align:center;"><input type="checkbox" class="cb-row-select" data-key="colab" value="${r.id}" onclick="event.stopPropagation()" onchange="_onRowCheckboxChange('colab')"></td>
       <td class="mono">${r.nr_registro}</td>
       <td><strong>${r.cdc_codigo||''}</strong></td>
       <td>${r.cargo||''}</td>
@@ -3393,6 +3520,7 @@ function renderTable(key, data) {
     </tr>`).join('');
   if (key === 'atend') tbody.innerHTML = data.map(r => `
     <tr ondblclick="editAtend('${r.id}')" title="Duplo clique para editar">
+      <td style="text-align:center;"><input type="checkbox" class="cb-row-select" data-key="atend" value="${r.id}" onclick="event.stopPropagation()" onchange="_onRowCheckboxChange('atend')"></td>
       <td class="mono">${r.nr_registro}</td>
       <td>${r.empresa_nome||''}</td>
       <td>${r.codigo_cdc||''}</td>
@@ -3409,6 +3537,7 @@ function renderTable(key, data) {
     </tr>`).join('');
   if (key === 'capcc') tbody.innerHTML = data.map(r => `
     <tr ondblclick="editCapCc('${r.id}')" title="Duplo clique para editar">
+      <td style="text-align:center;"><input type="checkbox" class="cb-row-select" data-key="capcc" value="${r.id}" onclick="event.stopPropagation()" onchange="_onRowCheckboxChange('capcc')"></td>
       <td class="mono">${r.nr_registro||''}</td>
       <td>${r.empresa_nome||''}</td>
       <td><strong>${r.sala_nome||''}</strong></td>
@@ -3424,6 +3553,7 @@ function renderTable(key, data) {
     </tr>`).join('');
   if (key === 'unidmens') tbody.innerHTML = data.map(r => `
     <tr ondblclick="${_isAdmin() ? `editUnidMens('${r.id}')` : ''}" title="${_isAdmin() ? 'Duplo clique para editar' : ''}">
+      <td style="text-align:center;">${_isAdmin() ? `<input type="checkbox" class="cb-row-select" data-key="unidmens" value="${r.id}" onclick="event.stopPropagation()" onchange="_onRowCheckboxChange('unidmens')">` : ''}</td>
       <td class="mono">${r.nr_registro||''}</td>
       <td><strong>${r.nome||''}</strong></td>
       <td>${r.observacao||''}</td>
@@ -3438,6 +3568,7 @@ function renderTable(key, data) {
     </tr>`).join('');
   if (key === 'classcdc') tbody.innerHTML = data.map(r => `
     <tr ondblclick="${_isAdmin() ? `editClassCdc('${r.id}')` : ''}" title="${_isAdmin() ? 'Duplo clique para editar' : ''}">
+      <td style="text-align:center;">${_isAdmin() ? `<input type="checkbox" class="cb-row-select" data-key="classcdc" value="${r.id}" onclick="event.stopPropagation()" onchange="_onRowCheckboxChange('classcdc')">` : ''}</td>
       <td class="mono">${r.nr_registro||''}</td>
       <td class="mono">${r.codigo||''}</td>
       <td><strong>${r.classificacao||''}</strong></td>
@@ -3452,6 +3583,7 @@ function renderTable(key, data) {
     </tr>`).join('');
   if (key === 'capgeral') tbody.innerHTML = data.map(r => `
     <tr ondblclick="editCapGeral('${r.id}')" title="Duplo clique para editar">
+      <td style="text-align:center;"><input type="checkbox" class="cb-row-select" data-key="capgeral" value="${r.id}" onclick="event.stopPropagation()" onchange="_onRowCheckboxChange('capgeral')"></td>
       <td class="mono">${r.nr_registro||''}</td>
       <td>${r.empresa_nome||''}</td>
       <td>${r.cdc_nome||''}</td>
@@ -3472,6 +3604,7 @@ function renderTable(key, data) {
     const classifBadge = { 'Serviço':'badge-green','Apoio':'badge-blue','Administrativo':'badge-yellow' };
     tbody.innerHTML = data.map(r => `
     <tr ondblclick="editEstServ('${r.id}')" title="Duplo clique para editar">
+      <td style="text-align:center;"><input type="checkbox" class="cb-row-select" data-key="estserv" value="${r.id}" onclick="event.stopPropagation()" onchange="_onRowCheckboxChange('estserv')"></td>
       <td class="mono">${r.nr_registro||''}</td>
       <td>${r.empresa_nome||''}</td>
       <td>${r.classificacao_cdc ? `<span class="badge ${classifBadge[r.classificacao_cdc]||'badge-blue'}">${r.classificacao_cdc}</span>` : ''}</td>
@@ -3490,6 +3623,7 @@ function renderTable(key, data) {
   }
   if (key === 'ratmet') tbody.innerHTML = data.map(r => `
     <tr ondblclick="editRatMet('${r.id}')" title="Duplo clique para editar">
+      <td style="text-align:center;"><input type="checkbox" class="cb-row-select" data-key="ratmet" value="${r.id}" onclick="event.stopPropagation()" onchange="_onRowCheckboxChange('ratmet')"></td>
       <td class="mono">${r.nr_registro||''}</td>
       <td>${r.empresa_nome||''}</td>
       <td>${r.cdc_nome||''}</td>
@@ -3526,6 +3660,7 @@ function renderTable(key, data) {
   }
   if (key === 'listaux') tbody.innerHTML = data.map(r => `
     <tr ondblclick="${_isAdmin() ? `editListAux('${r.id}')` : ''}" title="${_isAdmin() ? 'Duplo clique para editar' : ''}">
+      <td style="text-align:center;">${_isAdmin() ? `<input type="checkbox" class="cb-row-select" data-key="listaux" value="${r.id}" onclick="event.stopPropagation()" onchange="_onRowCheckboxChange('listaux')">` : ''}</td>
       <td class="mono">${r.nr_registro||''}</td>
       <td class="mono">${r.codigo||''}</td>
       <td><strong>${r.nome||''}</strong></td>
@@ -3539,6 +3674,19 @@ function renderTable(key, data) {
     </tr>`).join('');
   // Reaplica cabeçalhos clicáveis e indicadores de ordenação após renderizar
   setTimeout(() => { _makeSortableHeaders(key); _updateSortHeaders(key); }, 0);
+  // Restaura o estado marcado (checked) dos checkboxes de linha conforme a
+  // seleção já guardada em _selectedRows — assim marcar itens e depois digitar
+  // na busca não perde a seleção, mas nunca "vaza" para linhas que sumiram da
+  // tela (só marca o que de fato foi renderizado agora).
+  if (_selectedRows[key]) {
+    document.querySelectorAll(`.cb-row-select[data-key="${key}"]`).forEach(cb => {
+      cb.checked = _selectedRows[key].has(cb.value);
+    });
+    const cbAll = document.getElementById(`cb-${key}-all`);
+    const all = document.querySelectorAll(`.cb-row-select[data-key="${key}"]`);
+    if (cbAll) cbAll.checked = all.length > 0 && Array.from(all).every(cb => cb.checked);
+    _updateBulkDeleteUI(key);
+  }
 }
 
 // =============== DASHBOARD ===============
@@ -6248,7 +6396,9 @@ function showListAuxForm(record = null) {
     ['listaux-nr','listaux-codigo','listaux-nome','listaux-criado','listaux-alterado'].forEach(id=>f(id));
     f('listaux-status','Ativo');
   }
-  _setupFormEditBtns(null,'btn-del-listaux', listAuxEditId, null, deleteListAux, `Excluir este item?`);
+  _setupFormEditBtns('btn-dup-listaux','btn-del-listaux', listAuxEditId, duplicarListAux, deleteListAux, 'Excluir este item?');
+  const dupB = document.getElementById('btn-dup-listaux-b');
+  if (dupB) { dupB.style.display = listAuxEditId ? '' : 'none'; dupB.onclick = () => duplicarListAux(listAuxEditId); }
   const delB = document.getElementById('btn-del-listaux-b');
   if (delB) { delB.style.display = listAuxEditId ? '' : 'none'; delB.onclick = () => confirm2('Excluir este item?', () => deleteListAux(listAuxEditId)); }
   document.getElementById('sec-listas-aux').classList.add('editing');
@@ -6295,6 +6445,17 @@ async function deleteListAux(id) {
     try { await sbDelete(tabela, id); toast('Excluído','success'); delete _listAuxCache[tabela]; cancelListAuxForm(); loadListAux(); }
     catch(e) { toast('Erro ao excluir: '+e.message,'error'); }
   });
+}
+
+async function duplicarListAux(id) {
+  const tabela = document.getElementById('listaux-tipo').value;
+  try {
+    const d = await sbGet(tabela, `id=eq.${id}`);
+    if (!d[0]) return;
+    const nr = d[0].nr_registro;
+    showListAuxForm({...d[0], id: null, nr_registro: null});
+    _showDupBanner('listaux-form-wrap', nr);
+  } catch(e) { toast('Erro ao duplicar','error'); }
 }
 
 // =============== CAPACIDADES — CENTRO CIRÚRGICO ===============
@@ -6524,9 +6685,42 @@ function addRedutorCc()    { _ccRedutores.push({tipo:'Feriado',descricao:'',hora
 function removeRedutorCc(i){ _ccRedutores.splice(i,1); renderRedutoresCc(); }
 
 // ── CRUD ──────────────────────────────────────────────────────────
+// Migração retroativa: antes o campo "Nome da Sala" do Centro Cirúrgico era
+// texto livre. Agora é um dropdown do cadastro Quarto/Sala (mesmo catálogo
+// usado em Estrutura). Esta função roda uma vez por sessão e cria automati-
+// camente, no cadastro Quarto/Sala, qualquer nome de sala que já estivesse
+// em uso no Centro Cirúrgico mas ainda não existisse lá — assim nenhum dado
+// antigo fica "orfão" (selecionado mas ausente da lista) depois da mudança.
+let _migracaoSalasCcFeita = false;
+async function _migrarSalasCcParaListaAux() {
+  if (_migracaoSalasCcFeita) return;
+  _migracaoSalasCcFeita = true;
+  try {
+    const [capCc, quartosSalas] = await Promise.all([
+      sbGet('capacidade_cc', 'select=sala_nome'),
+      sbGet('quartos_salas', 'select=nome')
+    ]);
+    const existentes = new Set(quartosSalas.map(q => (q.nome||'').trim().toLowerCase()));
+    const usadosNoCc = new Set(
+      capCc.map(r => (r.sala_nome||'').trim()).filter(Boolean)
+    );
+    const faltando = [...usadosNoCc].filter(nome => !existentes.has(nome.toLowerCase()));
+    if (!faltando.length) return;
+    const maxNr = await sbMaxNr('quartos_salas');
+    let nr = maxNr;
+    for (const nome of faltando) {
+      nr++;
+      await sbPost('quartos_salas', { nr_registro: nr, nome, status: 'Ativo', criado_em: Date.now(), atualizado_em: Date.now() });
+    }
+    delete _listAuxCache['quartos_salas'];
+    toast(`${faltando.length} sala(s) do Centro Cirúrgico migrada(s) para o cadastro Quarto/Sala`, 'info');
+  } catch(e) { /* silencioso — se a tabela quartos_salas ainda não existir, a migração é pulada */ }
+}
+
 async function loadCapCc() {
   try {
     renderPeriodoChips('capcc');
+    await _migrarSalasCcParaListaAux();
     const [data, emps] = await Promise.all([
       sbGet('capacidade_cc'),
       sbGet('empresas','select=id,razao')
@@ -6558,6 +6752,7 @@ async function showCapCcForm(record = null) {
   const empSel = document.getElementById('cap-cc-empresa');
   empSel.innerHTML = '<option value="">Selecione</option>' +
     emps.map(e=>`<option value="${e.id}">${e.razao}</option>`).join('');
+  await populateListAuxSelect('quartos_salas','cap-cc-sala', record ? record.sala_nome : '');
 
   const f = (id,val='') => { const el=document.getElementById(id); if(el) el.value=(val===null||val===undefined)?'':val; };
   if (record) {
@@ -6572,7 +6767,8 @@ async function showCapCcForm(record = null) {
     f('cap-cc-criado-por', record.criado_por||'');
     f('cap-cc-alterado-por', record.atualizado_por||'');
   } else {
-    ['cap-cc-nr','cap-cc-sala','cap-cc-obs','cap-cc-criado','cap-cc-atualizado','cap-cc-criado-por','cap-cc-alterado-por'].forEach(id=>f(id));
+    ['cap-cc-nr','cap-cc-obs','cap-cc-criado','cap-cc-atualizado','cap-cc-criado-por','cap-cc-alterado-por'].forEach(id=>f(id));
+    f('cap-cc-sala','');
     f('cap-cc-ano', new Date().getFullYear());
     f('cap-cc-mes', padMes(new Date().getMonth()+1));
     f('cap-cc-periodo', new Date().toISOString().slice(0,7)+'-01');
@@ -6607,7 +6803,7 @@ async function saveCapCc() {
   const mes = document.getElementById('cap-cc-mes').value;
   const ano = document.getElementById('cap-cc-ano').value;
   if (!empresa_id || !sala_nome || !mes || !ano) {
-    toast('Preencha Empresa, Nome da Sala e Período','error'); return;
+    toast('Preencha Empresa, Sala Cirúrgica e Período','error'); return;
   }
   const { bruto, red, liq } = recalcCc();
   const body = {
@@ -6649,16 +6845,6 @@ async function deleteCapCc(id) {
     try { await sbDelete('capacidade_cc',id); toast('Sala excluída','success'); loadCapCc(); cancelCapCcForm(); }
     catch(e) { toast('Erro ao excluir: '+e.message,'error'); }
   });
-}
-
-async function duplicarCapCc(id) {
-  try {
-    const d = await sbGet('capacidade_cc', `id=eq.${id}`);
-    if (!d[0]) return;
-    const nr = d[0].nr_registro;
-    await showCapCcForm({...d[0], id: null, nr_registro: null});
-    _showDupBanner('cap-cc-form-wrap', nr);
-  } catch(e) { toast('Erro ao duplicar','error'); }
 }
 
 function toggleNavGroup(id) {
@@ -7138,6 +7324,17 @@ async function toggleHospitalAtivo(tenantId, ativoAtual) {
 }
 
 // =============== ORDENAÇÃO MULTI-COLUNA ===============
+// Mapa único "chave da tabela" -> "id do tbody", usado tanto para renderizar
+// quanto para tornar os cabeçalhos clicáveis e mostrar a seta de ordenação.
+// Antes esse mapa estava duplicado em 2 funções diferentes e ficava
+// desatualizado (ratmet, lanc e listaux não apareciam em um dos dois) —
+// agora é uma única fonte de verdade.
+const _tableTbodyMap = {
+  emp:'emp-tbody', cdc:'cdc-tbody', conta:'conta-tbody', colab:'colab-tbody',
+  atend:'atend-tbody', capcc:'cap-cc-tbody', classcdc:'class-cdc-tbody',
+  unidmens:'unid-mens-tbody', estserv:'est-serv-tbody', capgeral:'cap-geral-tbody',
+  ratmet:'rat-met-tbody', lanc:'lanc-tbody', listaux:'listaux-tbody'
+};
 // Armazena o estado de ordenação por tabela: [{ field, dir }]
 const _sortState = {};
 
@@ -7159,7 +7356,7 @@ const _tableCols = {
     { field: 'codigo_cdc',    label: 'Cód. CDC',            type: 'str' },
     { field: 'centro_custo',  label: 'Centro de Custo',     type: 'str' },
     { field: 'empresa_nome',  label: 'Empresa',             type: 'str' },
-    { field: 'tipo_cdc',      label: 'Tipo',                type: 'str' },
+    { field: 'classificacao_cdc', label: 'Classificação',   type: 'str' },
     { field: 'status_cdc',    label: 'Status',              type: 'str' },
     { field: 'status_rateio', label: 'Status de Atualização',  type: 'str' },
     { field: null,            label: 'Ações',               type: null  },
@@ -7265,6 +7462,15 @@ const _tableCols = {
     { field: 'area_ponderada', label: 'm² Ponderado',    type: 'num' },
     { field: null,             label: 'Ações',           type: null  },
   ],
+  listaux: [
+    { field: 'nr_registro',   label: 'Nº',         type: 'num' },
+    { field: 'codigo',        label: 'Código',     type: 'str' },
+    { field: 'nome',          label: 'Item',       type: 'str' },
+    { field: 'status',        label: 'Status',     type: 'str' },
+    { field: 'criado_em',     label: 'Criado em',  type: 'num' },
+    { field: 'atualizado_em', label: 'Alterado em',type: 'num' },
+    { field: null,            label: 'Ações',      type: null  },
+  ],
 };
 
 // Campos calculados usados para ordenação de período / vigência
@@ -7346,12 +7552,7 @@ function _updateSortHeaders(key) {
   const state = _sortState[key] || [];
   const isMulti = state.length > 1;
   const cols = _tableCols[key] || [];
-  const theadMap = {
-    emp:'emp-tbody', cdc:'cdc-tbody', conta:'conta-tbody', colab:'colab-tbody',
-    atend:'atend-tbody', capcc:'cap-cc-tbody', classcdc:'class-cdc-tbody',
-    unidmens:'unid-mens-tbody', estserv:'est-serv-tbody', capgeral:'cap-geral-tbody'
-  };
-  const tbody = document.getElementById(theadMap[key]);
+  const tbody = document.getElementById(_tableTbodyMap[key]);
   if (!tbody) return;
   const thead = tbody.closest('table').querySelector('thead tr');
   if (!thead) return;
@@ -7379,12 +7580,7 @@ function _updateSortHeaders(key) {
 function _makeSortableHeaders(key) {
   const cols = _tableCols[key];
   if (!cols) return;
-  const theadMap = {
-    emp:'emp-tbody', cdc:'cdc-tbody', conta:'conta-tbody', colab:'colab-tbody',
-    atend:'atend-tbody', capcc:'cap-cc-tbody', classcdc:'class-cdc-tbody',
-    unidmens:'unid-mens-tbody', estserv:'est-serv-tbody', capgeral:'cap-geral-tbody'
-  };
-  const tbody = document.getElementById(theadMap[key]);
+  const tbody = document.getElementById(_tableTbodyMap[key]);
   if (!tbody) return;
   const thead = tbody.closest('table').querySelector('thead tr');
   if (!thead) return;
@@ -9361,6 +9557,20 @@ async function confirmarAtualizarRateio() {
 }
 
 // =============== INIT ===============
+
+// Aplica a trava contra clique duplo (_guardAsync) em todas as funções de
+// salvar do sistema. Feito aqui, de uma vez, para não precisar reescrever
+// cada função individualmente — qualquer save* nova adicionada no futuro só
+// precisa ser incluída nesta lista para ganhar a mesma proteção.
+[
+  'saveEmpresa','saveCdc','saveConta','saveColab','saveAtend','saveUnidMens',
+  'saveCapGeral','saveEstServ','saveClassCdc','saveListAux','saveCapCc',
+  'saveAdminHosp','saveRatMet','saveLanc'
+].forEach(name => {
+  if (typeof window[name] === 'function') {
+    window[name] = _guardAsync(name, window[name]);
+  }
+});
 
 // Inicializa cabeçalhos clicáveis assim que o DOM estiver pronto
 // (as tabelas já existem no HTML, só precisamos ativar os listeners)
