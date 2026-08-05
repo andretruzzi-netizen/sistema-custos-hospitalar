@@ -1440,7 +1440,7 @@
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th style="width:36px;text-align:center;"><input type="checkbox" id="cb-atend-all" onchange="_toggleAllCheckbox('atend',this.checked)" style="accent-color:#1a1a1a;cursor:pointer;"></th><th>Nº</th><th>Empresa</th><th>CDC</th><th>Tipo</th><th>Período</th><th>Cap.Instalada</th><th>Qtde Atend.</th><th>Taxa Ocupação</th><th>Ações</th></tr>
+              <tr><th style="width:36px;text-align:center;"><input type="checkbox" id="cb-atend-all" onchange="_toggleAllCheckbox('atend',this.checked)" style="accent-color:#1a1a1a;cursor:pointer;"></th><th>Nº</th><th>Empresa</th><th>CDC</th><th>Classificação</th><th>Unid. Mensuração</th><th>Período</th><th>Cap.Instalada</th><th>Qtde Atend.</th><th>Taxa Ocupação</th><th>Ações</th></tr>
             </thead>
             <tbody id="atend-tbody"></tbody>
           </table>
@@ -1649,6 +1649,7 @@
         <div class="toolbar">
           <input class="search-box" type="text" placeholder="🔍 Buscar..." oninput="filterTable('capnova',this.value)">
           <button class="btn btn-primary" onclick="showCapNovaForm()">+ Novo Registro</button>
+          <button class="btn btn-warning" onclick="recalcularCapacidadeDoCdc()" title="Recalcula a Quantidade de Leitos (Diária) e os totais Bruto/Redutores/Líquido a partir do cadastro atual do CDC e da Estrutura">🔄 Recalcular do CDC</button>
           <button class="btn btn-secondary" onclick="openImportModal('capacidade')">⬆ Importar</button>
           <button class="btn btn-secondary" onclick="openExportModal('capacidade')">⬇ Exportar</button>
           <button class="btn btn-danger btn-sm" id="btn-bulk-del-capnova" style="display:none;" onclick="bulkDelete('capnova')">🗑️ Excluir Selecionados</button>
@@ -1779,6 +1780,61 @@
             <div style="background:#fff8eb;border:1px solid #b45309;border-radius:8px;padding:12px 14px;font-size:13px;color:#7c3d12;">
               ⚠️ O lançamento de capacidade por Diária foi implementado apenas para <strong>UTI</strong> e <strong>Internação</strong>.
               O Grupo de Serviço deste CDC é <strong id="cap-nova-diaria-grupo-nome"></strong>.
+            </div>
+          </div>
+
+          <!-- EXAME: Qtde de Equipamentos × Tempo Médio por Exame × Horas/Dia × Dias no Mês -->
+          <div id="grp-capnova-exame" style="display:none;margin-bottom:20px;">
+            <div class="form-grid">
+              <div class="form-group"><label>Quantidade de Equipamentos <span class="req">*</span></label>
+                <input id="cap-nova-exame-qtd-equip" type="number" min="1" step="1" placeholder="Ex: 2" oninput="recalcCapNovaExame()">
+              </div>
+              <div class="form-group"><label>Tempo Médio por Exame (minutos) <span class="req">*</span></label>
+                <input id="cap-nova-exame-tempo-medio" type="number" min="1" step="1" placeholder="Ex: 30" oninput="recalcCapNovaExame()">
+              </div>
+              <div class="form-group"><label>Horas de Funcionamento por Dia <span class="req">*</span></label>
+                <input id="cap-nova-exame-horas-dia" type="number" min="0" step="0.5" placeholder="Ex: 10" oninput="recalcCapNovaExame()">
+              </div>
+              <div class="form-group"><label>Dias no Mês
+                <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;display:block;">Automático — conforme o período selecionado</span>
+              </label>
+                <input id="cap-nova-exame-dias" readonly placeholder="Selecione o período">
+              </div>
+              <div class="form-group"><label>Exames por Dia (por equipamento)</label>
+                <input id="cap-nova-exame-por-dia" readonly placeholder="—">
+              </div>
+              <div class="form-group"><label>Total de Exames no Mês (Bruto)</label>
+                <input id="cap-nova-exame-bruto" readonly placeholder="—" style="font-weight:600;">
+              </div>
+            </div>
+          </div>
+
+          <!-- Redutores — EXAME (por dias ou horas, aplicados sobre a qtde de equipamentos afetados) -->
+          <div id="grp-capnova-redutores-exame" style="display:none;margin-bottom:24px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border);">
+              <span style="font-size:14px;font-weight:600;">⬇️ Redutores</span>
+              <button class="btn btn-secondary btn-sm" onclick="addRedutorExame()">+ Adicionar Redutor</button>
+            </div>
+            <div style="overflow-x:auto;">
+              <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                <thead>
+                  <tr style="background:var(--bg3);">
+                    <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;border-bottom:1px solid var(--border);width:170px;">Tipo</th>
+                    <th style="padding:8px;text-align:left;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;border-bottom:1px solid var(--border);">Descrição</th>
+                    <th style="padding:8px;text-align:center;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;border-bottom:1px solid var(--border);width:130px;">Equip. Afetados</th>
+                    <th style="padding:8px;text-align:center;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;border-bottom:1px solid var(--border);width:110px;">Reduzir em</th>
+                    <th style="padding:8px;text-align:center;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;border-bottom:1px solid var(--border);width:100px;">Quantidade</th>
+                    <th style="padding:8px;text-align:center;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;border-bottom:1px solid var(--border);width:110px;">Impacto</th>
+                    <th style="border-bottom:1px solid var(--border);width:44px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="capnova-redutores-exame-tbody">
+                  <tr><td colspan="7" style="padding:24px;text-align:center;color:var(--text3);">Clique em "+ Adicionar Redutor" para inserir um redutor</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div style="display:flex;justify-content:flex-end;padding:8px 4px;border-top:1px solid var(--border);margin-top:2px;">
+              <span style="font-size:13px;color:var(--text2);">Total redutores: <strong id="capnova-red-exame-sub" style="color:var(--danger);">0 exames</strong></span>
             </div>
           </div>
 
@@ -3447,8 +3503,9 @@ function renderTable(key, data) {
       <td style="text-align:center;"><input type="checkbox" class="cb-row-select" data-key="atend" value="${r.id}" onclick="event.stopPropagation()" onchange="_onRowCheckboxChange('atend')"></td>
       <td class="mono">${r.nr_registro}</td>
       <td>${r.empresa_nome||''}</td>
-      <td>${r.codigo_cdc||''}</td>
-      <td>${r.tipo||''}</td>
+      <td>${r.cdc_nome||r.codigo_cdc||''}</td>
+      <td>${r.cdc_classificacao ? `<span class="badge ${_classifCdcBadge[r.cdc_classificacao]||'badge-blue'}">${r.cdc_classificacao}</span>` : ''}</td>
+      <td>${r.unidade_mensuracao||''}</td>
       <td>${fmtPeriodo(r.mes, r.ano)}</td>
       <td style="text-align:right;">${r.capacidade_instalada!=null?r.capacidade_instalada:'—'}</td>
       <td style="text-align:right;">${r.qtde_atendimentos!=null?r.qtde_atendimentos:'—'}</td>
@@ -3490,10 +3547,11 @@ function renderTable(key, data) {
       </div>` : '<span class="text-sm" style="color:var(--text3);">Somente leitura</span>'}</td>
     </tr>`).join('');
   if (key === 'capnova') tbody.innerHTML = data.map(r => {
-    const suf = r.unidade_mensuracao === 'Diária' ? '' : 'h';
-    const detalhe = r.unidade_mensuracao === 'Diária'
-      ? (r.quantidade_leitos!=null ? r.quantidade_leitos+' leitos' : '')
-      : `${r.subtipo||''}${r.quarto_sala?' — '+r.quarto_sala:''}`;
+    const suf = (r.unidade_mensuracao === 'Diária' || r.unidade_mensuracao === 'Exame') ? '' : 'h';
+    let detalhe;
+    if (r.unidade_mensuracao === 'Diária') detalhe = (r.quantidade_leitos!=null ? r.quantidade_leitos+' leitos' : '');
+    else if (r.unidade_mensuracao === 'Exame') detalhe = (r.quantidade_equipamentos!=null ? r.quantidade_equipamentos+' equip. · '+(r.tempo_medio_exame_min!=null?r.tempo_medio_exame_min+'min/exame':'') : '');
+    else detalhe = `${r.subtipo||''}${r.quarto_sala?' — '+r.quarto_sala:''}`;
     return `
     <tr ondblclick="editCapNova('${r.id}')" title="Duplo clique para editar">
       <td style="text-align:center;"><input type="checkbox" class="cb-row-select" data-key="capnova" value="${r.id}" onclick="event.stopPropagation()" onchange="_onRowCheckboxChange('capnova')"></td>
@@ -4472,12 +4530,19 @@ let atendEditId = null;
 async function loadAtendimentos() {
   try {
     renderPeriodoChips('atend');
-    const [data, emps] = await Promise.all([
-      sbGet('atendimentos'), sbGet('empresas','select=id,razao')
+    const [data, emps, cdcs] = await Promise.all([
+      sbGet('atendimentos'), sbGet('empresas','select=id,razao'),
+      sbGet('cdc','select=id,centro_custo,sigla,classificacao_cdc')
     ]);
     const empMap = {}; emps.forEach(e=>empMap[e.id]=e.razao);
+    const cdcMap = {}; cdcs.forEach(c=>cdcMap[c.id]={ nome: c.centro_custo||c.sigla||'', classificacao: c.classificacao_cdc||'' });
     const filtered = data.filter(r => passaFiltroPeriodo('atend', r.mes, r.ano));
-    const enriched = filtered.map(r=>({...r, empresa_nome: empMap[r.empresa_id]||''}));
+    const enriched = filtered.map(r=>({
+      ...r,
+      empresa_nome: empMap[r.empresa_id]||'',
+      cdc_nome: r.cdc_id ? (cdcMap[r.cdc_id]?.nome || '') : '',
+      cdc_classificacao: r.cdc_id ? (cdcMap[r.cdc_id]?.classificacao || '') : ''
+    }));
     tableData.atend = enriched;
     renderTable('atend', enriched);
     const totAtend = filtered.reduce((s,r)=>s+(parseFloat(r.qtde_atendimentos)||0),0);
@@ -4870,6 +4935,8 @@ const _fieldLabelDict = {
   qtde_atendimentos: 'Qtde de Atendimentos', taxa_ocupacao_padrao: 'Taxa de Ocupação Padrão (%)',
   qtde_padrao: 'Qtde Padrão', qtde_altas: 'Qtde de Altas (saídas)', pacientes: 'Qtde de Pacientes',
   numero_salas: 'Nº Salas', numero_leitos: 'Nº Leitos', numero_colaboradores: 'Nº Colaboradores',
+  quantidade_equipamentos: 'Qtde de Equipamentos', tempo_medio_exame_min: 'Tempo Médio por Exame (min)',
+  horas_dia_exame: 'Horas de Funcionamento por Dia', dias_mes: 'Dias no Mês',
   dia_semana: 'Dia da Semana', dias_no_mes: 'Dias no Mês', inicio: 'Início', fim: 'Fim',
   subtipo: 'Subtipo', quarto_sala: 'Quarto / Sala', leito_box: 'Leito / Box', nome: 'Nome',
   tipo_acomodacao: 'Tipo de Acomodação', quantidade_leitos: 'Qtd. Leitos',
@@ -5590,12 +5657,12 @@ function onCapNovaSubtipoChange() {
 
 // =============== CAPACIDADE UNIFICADA (roteada por Unidade de Mensuração) ===============
 // Uma única tela para todo lançamento de capacidade instalada. O formulário
-// que aparece depende da Unidade de Mensuração do CDC selecionado — por
-// enquanto só "Hora" está implementado (cobre Centro Cirúrgico, RPA, Centro
-// Cirúrgico Robótica, Manutenção, e qualquer outro CDC medido em horas).
-// Demais unidades (Diária, Exame, Cirurgia, etc.) mostram um aviso de que
-// ainda não foram implementadas, sem travar o cadastro do CDC em si.
-const _UNIDADES_IMPLEMENTADAS = ['Hora', 'Diária'];
+// que aparece depende da Unidade de Mensuração do CDC selecionado — "Hora"
+// (Centro Cirúrgico, RPA, Manutenção, etc.), "Diária" (UTI/Internação, por
+// leito) e "Exame" (SADT/Laboratório, por equipamento) estão implementados.
+// Demais unidades mostram um aviso de que ainda não foram implementadas,
+// sem travar o cadastro do CDC em si.
+const _UNIDADES_IMPLEMENTADAS = ['Hora', 'Diária', 'Exame'];
 // Diária só está implementada para estes Grupos de Serviço por enquanto
 const _DIARIA_GRUPOS_IMPLEMENTADOS = ['UTI', 'Internação'];
 
@@ -5603,6 +5670,7 @@ let capNovaEditId = null;
 let _capNovaHorarios  = [];
 let _capNovaRedutores = [];
 let _capNovaRedutoresDiaria = [];
+let _capNovaRedutoresExame = [];
 let _capNovaUnidade   = null; // Unidade de Mensuração do CDC selecionado
 let _capNovaGrupoServico = null; // Grupo de Serviço do CDC selecionado (usado pela Diária)
 let _capNovaLeitosQtd = 0;   // Quantidade de leitos do CDC (Diária), somada da Estrutura
@@ -5614,6 +5682,7 @@ function syncPeriodoCapNova() {
   document.getElementById('cap-nova-mes').value = mes;
   document.getElementById('cap-nova-ano').value = ano;
   if (_capNovaUnidade === 'Diária') recalcCapNovaDiaria();
+  else if (_capNovaUnidade === 'Exame') recalcCapNovaExame();
   else renderHorariosCapNova(); // recalcula dias do mês ao mudar o período (Hora)
 }
 
@@ -5704,15 +5773,18 @@ function _capNovaAplicarCamposCondicionais() {
   const grpRedutores       = document.getElementById('grp-capnova-redutores');
   const grpDiariaInfo      = document.getElementById('grp-capnova-diaria');
   const grpRedutoresDiaria = document.getElementById('grp-capnova-redutores-diaria');
+  const grpExameInfo       = document.getElementById('grp-capnova-exame');
+  const grpRedutoresExame  = document.getElementById('grp-capnova-redutores-exame');
   const grpResumo          = document.getElementById('grp-capnova-resumo');
   const avisoNaoImpl       = document.getElementById('cap-nova-unidade-nao-implementada');
   const avisoDiariaGrupo   = document.getElementById('cap-nova-diaria-grupo-nao-suportado');
 
   const isHora = _capNovaUnidade === 'Hora';
   const isDiaria = _capNovaUnidade === 'Diária';
+  const isExame = _capNovaUnidade === 'Exame';
   const diariaGrupoOk = isDiaria && _DIARIA_GRUPOS_IMPLEMENTADOS.includes(_capNovaGrupoServico);
 
-  const implementada = !!(isHora || (isDiaria && diariaGrupoOk));
+  const implementada = !!(isHora || isExame || (isDiaria && diariaGrupoOk));
   const diariaGrupoNaoSuportado = isDiaria && !diariaGrupoOk;
   const naoImplementada = _capNovaUnidade && !implementada && !diariaGrupoNaoSuportado;
 
@@ -5721,6 +5793,8 @@ function _capNovaAplicarCamposCondicionais() {
   grpRedutores.style.display       = isHora ? '' : 'none';
   grpDiariaInfo.style.display      = (isDiaria && diariaGrupoOk) ? '' : 'none';
   grpRedutoresDiaria.style.display = (isDiaria && diariaGrupoOk) ? '' : 'none';
+  grpExameInfo.style.display       = isExame ? '' : 'none';
+  grpRedutoresExame.style.display  = isExame ? '' : 'none';
   grpResumo.style.display          = implementada ? '' : 'none';
 
   avisoNaoImpl.style.display = naoImplementada ? '' : 'none';
@@ -5731,6 +5805,7 @@ function _capNovaAplicarCamposCondicionais() {
 
   if (isHora) recalcCapNova();
   if (isDiaria && diariaGrupoOk) recalcCapNovaDiaria();
+  if (isExame) recalcCapNovaExame();
 }
 
 // ── Horários (grade de 7 dias) — mesma lógica do Centro Cirúrgico, com
@@ -5745,7 +5820,7 @@ function renderHorariosCapNova() {
   if (!tbody) return;
 
   tbody.innerHTML = _CC_DIAS.map((d, i) => {
-    const h       = _capNovaHorarios[i] || { ativo: false, inicio: '07:00', fim: '19:00' };
+    const h       = _capNovaHorarios[i] || { ativo: false, inicio: '07:00', fim: '24:00' };
     const ativo   = !!h.ativo;
     const diasCalc = ativo ? _calcDiasDowMes(mes, ano, d.dow) : 0;
     const hDia     = ativo ? _calcHorasEntre(h.inicio, h.fim) : 0;
@@ -5920,6 +5995,102 @@ function recalcCapNovaDiaria() {
   return { bruto, red, liq };
 }
 
+// ── EXAME: Qtde de Equipamentos × Tempo Médio por Exame × Horas/Dia × Dias no Mês ──
+function _fmtExames(v) { return v.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}) + ' exames'; }
+
+function renderRedutoresExame() {
+  const tbody = document.getElementById('capnova-redutores-exame-tbody');
+  if (!tbody) return;
+  if (!_capNovaRedutoresExame.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--text3);">Clique em "+ Adicionar Redutor" para inserir um redutor</td></tr>';
+    recalcCapNovaExame(); return;
+  }
+  const tempoMedio = parseFloat(document.getElementById('cap-nova-exame-tempo-medio').value) || 0;
+  const porHora = tempoMedio > 0 ? 60/tempoMedio : 0;
+  const porDia  = (parseFloat(document.getElementById('cap-nova-exame-horas-dia').value) || 0) * porHora;
+  tbody.innerHTML = _capNovaRedutoresExame.map((r, i) => {
+    const equip = parseFloat(r.equipamentos) || 0;
+    const qtd   = parseFloat(r.quantidade) || 0;
+    const impacto = r.reducao === 'Horas' ? equip * porHora * qtd : equip * porDia * qtd;
+    return `
+    <tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:8px 12px;">
+        <select onchange="_capNovaRedutoresExame[${i}].tipo=this.value;" style="font-size:13px;width:100%;">
+          ${_TIPOS_REDUTOR.map(t=>`<option ${r.tipo===t?'selected':''}>${t}</option>`).join('')}
+        </select>
+      </td>
+      <td style="padding:8px;">
+        <input type="text" value="${r.descricao||''}" placeholder="Descrição do evento"
+          oninput="_capNovaRedutoresExame[${i}].descricao=this.value" style="font-size:13px;width:100%;">
+      </td>
+      <td style="padding:8px;">
+        <input type="number" min="0" step="1" value="${r.equipamentos||''}" placeholder="0"
+          oninput="_capNovaRedutoresExame[${i}].equipamentos=parseFloat(this.value)||0;renderRedutoresExame();"
+          style="font-size:13px;width:100%;text-align:center;">
+      </td>
+      <td style="padding:8px;">
+        <select onchange="_capNovaRedutoresExame[${i}].reducao=this.value;renderRedutoresExame();" style="font-size:13px;width:100%;">
+          <option ${r.reducao==='Dias'?'selected':''}>Dias</option>
+          <option ${r.reducao==='Horas'?'selected':''}>Horas</option>
+        </select>
+      </td>
+      <td style="padding:8px;">
+        <input type="number" min="0" step="0.5" value="${r.quantidade||''}" placeholder="0"
+          oninput="_capNovaRedutoresExame[${i}].quantidade=parseFloat(this.value)||0;renderRedutoresExame();"
+          style="font-size:13px;width:100%;text-align:center;">
+      </td>
+      <td style="padding:8px;text-align:center;font-size:12px;color:var(--danger);font-weight:600;">${impacto.toFixed(1)}</td>
+      <td style="padding:8px;text-align:center;">
+        <button class="btn btn-danger btn-sm" onclick="removeRedutorExame(${i})">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+  recalcCapNovaExame();
+}
+
+function addRedutorExame()    { _capNovaRedutoresExame.push({tipo:'Feriado',descricao:'',equipamentos:0,reducao:'Dias',quantidade:0}); renderRedutoresExame(); }
+function removeRedutorExame(i){ _capNovaRedutoresExame.splice(i,1); renderRedutoresExame(); }
+
+// Total Bruto (exames/mês) = Qtde de Equipamentos × Exames/dia por equipamento × Dias no Mês,
+// onde Exames/dia por equipamento = (Horas de Funcionamento por Dia × 60) / Tempo Médio por Exame (min).
+// Redutor em "Dias": equip_afetados × exames/dia × dias. Redutor em "Horas": equip_afetados × exames/hora × horas.
+function recalcCapNovaExame() {
+  if (_capNovaUnidade !== 'Exame') return { bruto: 0, red: 0, liq: 0 };
+  const mes = document.getElementById('cap-nova-mes').value;
+  const ano = document.getElementById('cap-nova-ano').value;
+  const dias = _diasNoMes(mes, ano);
+  const qtdEquip   = parseFloat(document.getElementById('cap-nova-exame-qtd-equip').value) || 0;
+  const tempoMedio = parseFloat(document.getElementById('cap-nova-exame-tempo-medio').value) || 0;
+  const horasDia   = parseFloat(document.getElementById('cap-nova-exame-horas-dia').value) || 0;
+
+  const porHora = tempoMedio > 0 ? 60/tempoMedio : 0;
+  const porDiaPorEquip = horasDia * porHora;
+  const bruto = qtdEquip * porDiaPorEquip * dias;
+
+  let red = 0;
+  _capNovaRedutoresExame.forEach(r => {
+    const equip = parseFloat(r.equipamentos) || 0;
+    const qtd   = parseFloat(r.quantidade) || 0;
+    red += r.reducao === 'Horas' ? equip * porHora * qtd : equip * porDiaPorEquip * qtd;
+  });
+  const liq = Math.max(0, bruto - red);
+
+  const dEl  = document.getElementById('cap-nova-exame-dias');
+  const pEl  = document.getElementById('cap-nova-exame-por-dia');
+  const bEl  = document.getElementById('cap-nova-exame-bruto');
+  const rEl  = document.getElementById('capnova-red-exame-sub');
+  if (dEl) dEl.value = dias || '';
+  if (pEl) pEl.value = porDiaPorEquip ? porDiaPorEquip.toFixed(1) : '';
+  if (bEl) bEl.value = bruto ? bruto.toFixed(1) : '';
+  if (rEl) rEl.textContent = _fmtExames(red);
+
+  document.getElementById('capnova-total-bruto').textContent     = _fmtExames(bruto);
+  document.getElementById('capnova-total-redutores').textContent = _fmtExames(red);
+  document.getElementById('capnova-total-liquido').textContent   = _fmtExames(liq);
+
+  return { bruto, red, liq };
+}
+
 // ── Cálculo de totais (modo Hora: grade de horários — igual Centro Cirúrgico) ──
 function recalcCapNova() {
   if (_capNovaUnidade !== 'Hora') return { bruto: 0, red: 0, liq: 0 };
@@ -5946,6 +6117,113 @@ function recalcCapNova() {
   document.getElementById('capnova-red-sub').textContent   = _fmtH(red);
 
   return { bruto, red, liq };
+}
+
+// Recalcula, para todos os registros de Capacidade atualmente carregados na
+// tela, os campos que dependem de cadastros externos e podem ficar
+// desatualizados quando esses cadastros mudam DEPOIS que a Capacidade já foi
+// salva (Capacidade é um "retrato" do período, não recalcula sozinha):
+//  - Diária: Quantidade de Leitos (soma da Estrutura para o CDC), Dias no Mês
+//    e os totais Bruto/Redutores/Líquido resultantes
+//  - Hora: os totais Bruto/Redutores/Líquido a partir da grade de horários e
+//    dos redutores já salvos no registro
+// Útil, por exemplo, depois de corrigir a Quantidade de Leitos de um
+// Quarto/Sala na Estrutura — sem isso, os registros de Capacidade já salvos
+// continuam mostrando o número antigo até serem reabertos e salvos manualmente.
+async function recalcularCapacidadeDoCdc() {
+  if (!tableData.capnova.length) { toast('Nenhum registro de Capacidade carregado na tela para recalcular','info'); return; }
+  if (!confirm(`Recalcular Quantidade de Leitos (Diária) e os totais Bruto/Redutores/Líquido de ${tableData.capnova.length} registro(s), com base no cadastro atual da Estrutura?`)) return;
+  toast('Recalculando...','info');
+  try {
+    const estrutura = await sbGet('estrutura_servicos', 'status=eq.Ativo&select=cdc_id,quantidade_leitos');
+    const leitosPorCdc = {};
+    estrutura.forEach(r => {
+      const qtd = (r.quantidade_leitos !== null && r.quantidade_leitos !== undefined && r.quantidade_leitos !== '')
+        ? parseInt(r.quantidade_leitos) : 1;
+      leitosPorCdc[r.cdc_id] = (leitosPorCdc[r.cdc_id] || 0) + qtd;
+    });
+
+    let ok = 0, semAlteracao = 0;
+    for (const r of tableData.capnova) {
+      const body = {};
+      let mudou = false;
+
+      if (r.unidade_mensuracao === 'Diária') {
+        const leitosAtual = leitosPorCdc[r.cdc_id] || 0;
+        const dias = _diasNoMes(r.mes, r.ano);
+        const bruto = leitosAtual * dias;
+        const redutoresSalvos = r.redutores ? (typeof r.redutores === 'string' ? JSON.parse(r.redutores) : r.redutores) : [];
+        let red = 0;
+        redutoresSalvos.forEach(rr => {
+          const l = parseFloat(rr.leitos) || 0;
+          const q = parseFloat(rr.quantidade) || 0;
+          red += rr.reducao === 'Horas' ? l * (q/24) : l * q;
+        });
+        const liq = Math.max(0, bruto - red);
+        if (leitosAtual !== (r.quantidade_leitos||0) || dias !== (r.dias_mes||0)
+            || Math.abs(bruto - (r.total_horas_brutas||0)) > 0.001 || Math.abs(liq - (r.total_horas_liquidas||0)) > 0.001) {
+          body.quantidade_leitos = leitosAtual;
+          body.dias_mes = dias;
+          body.total_horas_brutas = bruto;
+          body.total_redutores = red;
+          body.total_horas_liquidas = liq;
+          mudou = true;
+        }
+      } else if (r.unidade_mensuracao === 'Hora') {
+        const horariosSalvos = r.horarios ? (typeof r.horarios === 'string' ? JSON.parse(r.horarios) : r.horarios) : [];
+        const horariosNormalizados = _initHorarios7(horariosSalvos);
+        let bruto = 0;
+        _CC_DIAS.forEach((d, i) => {
+          const h = horariosNormalizados[i];
+          if (!h || !h.ativo) return;
+          bruto += _calcDiasDowMes(r.mes, r.ano, d.dow) * _calcHorasEntre(h.inicio, h.fim);
+        });
+        const redutoresSalvos = r.redutores ? (typeof r.redutores === 'string' ? JSON.parse(r.redutores) : r.redutores) : [];
+        let red = 0;
+        redutoresSalvos.forEach(rr => { red += parseFloat(rr.horas) || 0; });
+        const liq = Math.max(0, bruto - red);
+        if (Math.abs(bruto - (r.total_horas_brutas||0)) > 0.001 || Math.abs(liq - (r.total_horas_liquidas||0)) > 0.001) {
+          body.total_horas_brutas = bruto;
+          body.total_redutores = red;
+          body.total_horas_liquidas = liq;
+          mudou = true;
+        }
+      } else if (r.unidade_mensuracao === 'Exame') {
+        const qtdEquip   = parseFloat(r.quantidade_equipamentos) || 0;
+        const tempoMedio = parseFloat(r.tempo_medio_exame_min) || 0;
+        const horasDia   = parseFloat(r.horas_dia_exame) || 0;
+        const dias = _diasNoMes(r.mes, r.ano);
+        const porHora = tempoMedio > 0 ? 60/tempoMedio : 0;
+        const porDiaPorEquip = horasDia * porHora;
+        const bruto = qtdEquip * porDiaPorEquip * dias;
+        const redutoresSalvos = r.redutores ? (typeof r.redutores === 'string' ? JSON.parse(r.redutores) : r.redutores) : [];
+        let red = 0;
+        redutoresSalvos.forEach(rr => {
+          const equip = parseFloat(rr.equipamentos) || 0;
+          const qtd   = parseFloat(rr.quantidade) || 0;
+          red += rr.reducao === 'Horas' ? equip * porHora * qtd : equip * porDiaPorEquip * qtd;
+        });
+        const liq = Math.max(0, bruto - red);
+        if (dias !== (r.dias_mes||0) || Math.abs(bruto - (r.total_horas_brutas||0)) > 0.001 || Math.abs(liq - (r.total_horas_liquidas||0)) > 0.001) {
+          body.dias_mes = dias;
+          body.total_horas_brutas = bruto;
+          body.total_redutores = red;
+          body.total_horas_liquidas = liq;
+          mudou = true;
+        }
+      } else {
+        semAlteracao++; continue;
+      }
+
+      if (mudou) {
+        body.atualizado_em = Date.now();
+        await sbPatch('capacidade', r.id, body);
+        ok++;
+      } else semAlteracao++;
+    }
+    toast(`✅ ${ok} registro(s) atualizado(s)${semAlteracao?` — ${semAlteracao} já estavam corretos`:''}`,'success');
+    await loadCapNova();
+  } catch(e) { toast('Erro ao recalcular: '+e.message,'error'); }
 }
 
 async function loadCapNova() {
@@ -5976,17 +6254,17 @@ async function loadCapNova() {
 
 async function showCapNovaForm(record = null) {
   capNovaEditId = record ? record.id : null;
-  _capNovaHorarios = _initHorarios7(record && record.unidade_mensuracao !== 'Diária' && record.horarios
+  const _naoUsaHorarios = record && (record.unidade_mensuracao === 'Diária' || record.unidade_mensuracao === 'Exame');
+  _capNovaHorarios = _initHorarios7(record && !_naoUsaHorarios && record.horarios
     ? (typeof record.horarios === 'string' ? JSON.parse(record.horarios) : record.horarios) : []);
   const _redutoresSalvos = record && record.redutores
     ? (typeof record.redutores === 'string' ? JSON.parse(record.redutores) : record.redutores) : [];
-  if (record && record.unidade_mensuracao === 'Diária') {
-    _capNovaRedutoresDiaria = _redutoresSalvos;
-    _capNovaRedutores = [];
-  } else {
-    _capNovaRedutores = _redutoresSalvos;
-    _capNovaRedutoresDiaria = [];
-  }
+  _capNovaRedutoresDiaria = [];
+  _capNovaRedutoresExame  = [];
+  _capNovaRedutores       = [];
+  if (record && record.unidade_mensuracao === 'Diária')      _capNovaRedutoresDiaria = _redutoresSalvos;
+  else if (record && record.unidade_mensuracao === 'Exame')  _capNovaRedutoresExame  = _redutoresSalvos;
+  else                                                        _capNovaRedutores       = _redutoresSalvos;
 
   document.getElementById('cap-nova-form-title').textContent =
     record ? '✏️ Editar Registro — Capacidade' : '➕ Novo Registro — Capacidade';
@@ -6010,6 +6288,10 @@ async function showCapNovaForm(record = null) {
     f('cap-nova-subtipo', record.subtipo);
     onCapNovaSubtipoChange();
     f('cap-nova-quarto-sala', record.quarto_sala);
+    f('cap-nova-exame-qtd-equip', record.quantidade_equipamentos);
+    f('cap-nova-exame-tempo-medio', record.tempo_medio_exame_min);
+    f('cap-nova-exame-horas-dia', record.horas_dia_exame);
+    if (record.unidade_mensuracao === 'Exame') recalcCapNovaExame();
     f('cap-nova-obs', record.observacoes);
     f('cap-nova-criado', fmtDate(record.criado_em));
     f('cap-nova-atualizado', fmtDate(record.atualizado_em));
@@ -6027,6 +6309,8 @@ async function showCapNovaForm(record = null) {
     document.getElementById('cap-nova-diaria-leitos').value = '';
     document.getElementById('cap-nova-diaria-dias').value = '';
     document.getElementById('cap-nova-diaria-bruto').value = '';
+    ['cap-nova-exame-qtd-equip','cap-nova-exame-tempo-medio','cap-nova-exame-horas-dia',
+     'cap-nova-exame-dias','cap-nova-exame-por-dia','cap-nova-exame-bruto'].forEach(id=>f(id));
     f('cap-nova-ano', new Date().getFullYear());
     f('cap-nova-mes', padMes(new Date().getMonth()+1));
     f('cap-nova-periodo', new Date().toISOString().slice(0,7)+'-01');
@@ -6036,6 +6320,7 @@ async function showCapNovaForm(record = null) {
   renderHorariosCapNova();
   renderRedutoresCapNova();
   renderRedutoresDiaria();
+  renderRedutoresExame();
 
   _setupFormEditBtns('btn-dup-capnova','btn-del-capnova', capNovaEditId, duplicarCapNova, deleteCapNova, 'Excluir este registro?');
   ['btn-del-capnova-b','btn-dup-capnova-b'].forEach((id,i) => {
@@ -6082,6 +6367,34 @@ async function saveCapNova() {
       horarios: null,
       redutores: JSON.stringify(_capNovaRedutoresDiaria),
       quantidade_leitos: _capNovaLeitosQtd,
+      quantidade_equipamentos: null,
+      tempo_medio_exame_min: null,
+      horas_dia_exame: null,
+      dias_mes: _diasNoMes(mes, ano),
+      total_horas_brutas:   bruto,
+      total_redutores:      red,
+      total_horas_liquidas: liq,
+      observacoes: document.getElementById('cap-nova-obs').value,
+      atualizado_em: Date.now()
+    };
+  } else if (_capNovaUnidade === 'Exame') {
+    const qtdEquip   = parseFloat(document.getElementById('cap-nova-exame-qtd-equip').value);
+    const tempoMedio = parseFloat(document.getElementById('cap-nova-exame-tempo-medio').value);
+    const horasDia   = parseFloat(document.getElementById('cap-nova-exame-horas-dia').value);
+    if (!qtdEquip || qtdEquip <= 0)     { toast('Informe a Quantidade de Equipamentos','error'); return; }
+    if (!tempoMedio || tempoMedio <= 0) { toast('Informe o Tempo Médio por Exame (minutos)','error'); return; }
+    if (!horasDia || horasDia <= 0)     { toast('Informe as Horas de Funcionamento por Dia','error'); return; }
+    const { bruto, red, liq } = recalcCapNovaExame();
+    body = {
+      empresa_id, cdc_id, mes, ano: parseInt(ano),
+      unidade_mensuracao: _capNovaUnidade,
+      subtipo: null, quarto_sala: null,
+      horarios: null,
+      redutores: JSON.stringify(_capNovaRedutoresExame),
+      quantidade_leitos: null,
+      quantidade_equipamentos: qtdEquip,
+      tempo_medio_exame_min: tempoMedio,
+      horas_dia_exame: horasDia,
       dias_mes: _diasNoMes(mes, ano),
       total_horas_brutas:   bruto,
       total_redutores:      red,
@@ -6103,6 +6416,9 @@ async function saveCapNova() {
       horarios:  JSON.stringify(_capNovaHorarios),
       redutores: JSON.stringify(_capNovaRedutores),
       quantidade_leitos: null,
+      quantidade_equipamentos: null,
+      tempo_medio_exame_min: null,
+      horas_dia_exame: null,
       dias_mes: null,
       total_horas_brutas:   bruto,
       total_redutores:      red,
@@ -6737,9 +7053,20 @@ function gerarOpcoesHora() {
   }
   return opts.join('');
 }
-// Opções para o campo FIM — inclui 24:00 para funcionamento integral
+// Opções para o campo FIM — inclui 24:00 para funcionamento integral.
+// "24:00 — dia completo" fica logo após "Selecione" (primeira opção real),
+// já que é o valor padrão/mais usado — abrir a lista e apertar Enter já
+// seleciona 24:00 direto, sem precisar rolar até o final.
 function gerarOpcoesHoraFim() {
-  return gerarOpcoesHora() + '<option value="24:00">24:00 — dia completo</option>';
+  let opts = '<option value="">Selecione</option><option value="24:00">24:00 — dia completo</option>';
+  for (let h = 0; h <= 23; h++) {
+    for (let m of [0, 30]) {
+      const hh = String(h).padStart(2,'0');
+      const mm = String(m).padStart(2,'0');
+      opts += `<option value="${hh}:${mm}">${hh}:${mm}</option>`;
+    }
+  }
+  return opts;
 }
 
 // Calcula horas entre dois horários "HH:MM"
@@ -6766,22 +7093,26 @@ const _CC_DIAS = [
   { key: 'dom', label: 'Domingo',        dow: 0 },
 ];
 
-// Garante que a grade de horários sempre tenha exatamente 7 entradas (uma por dia)
+// Garante que a grade de horários sempre tenha exatamente 7 entradas (uma por dia).
+// Padrão para registro NOVO (sem horariosSalvos): todos os 7 dias já ativos,
+// 07:00 às 24:00 (dia completo) — reflete o padrão mais comum (funcionamento
+// integral) e evita que o usuário precise marcar os 7 dias manualmente.
 function _initHorarios7(horariosSalvos) {
+  const semDadosSalvos = !horariosSalvos || !horariosSalvos.length;
   const resultado = _CC_DIAS.map(d => ({
-    ativo:  false,
+    ativo:  semDadosSalvos, // sem registro salvo (novo) -> já vem marcado
     inicio: '07:00',
-    fim:    '19:00',
+    fim:    '24:00',
     _key:   d.key
   }));
 
-  if (!horariosSalvos || !horariosSalvos.length) return resultado;
+  if (semDadosSalvos) return resultado;
 
   if (horariosSalvos.length === 7 && (horariosSalvos[0]._key !== undefined || horariosSalvos[0].hasOwnProperty('ativo'))) {
     return _CC_DIAS.map((d, i) => ({
       ativo:  !!(horariosSalvos[i] ? horariosSalvos[i].ativo : false),
       inicio: (horariosSalvos[i] && horariosSalvos[i].inicio) || '07:00',
-      fim:    (horariosSalvos[i] && horariosSalvos[i].fim)    || '19:00',
+      fim:    (horariosSalvos[i] && horariosSalvos[i].fim)    || '24:00',
       _key:   d.key
     }));
   }
@@ -6792,7 +7123,7 @@ function _initHorarios7(horariosSalvos) {
       if (bloco[d.key]) {
         resultado[i].ativo  = true;
         resultado[i].inicio = bloco.inicio || '07:00';
-        resultado[i].fim    = bloco.fim    || '19:00';
+        resultado[i].fim    = bloco.fim    || '24:00';
       }
     });
   });
@@ -7334,8 +7665,9 @@ const _tableCols = {
   atend: [
     { field: 'nr_registro',         label: 'Nº',             type: 'num' },
     { field: 'empresa_nome',        label: 'Empresa',        type: 'str' },
-    { field: 'codigo_cdc',          label: 'CDC',            type: 'str' },
-    { field: 'tipo',                label: 'Tipo',           type: 'str' },
+    { field: 'cdc_nome',            label: 'CDC',            type: 'str' },
+    { field: 'cdc_classificacao',   label: 'Classificação',  type: 'str' },
+    { field: 'unidade_mensuracao',  label: 'Unid. Mensuração',type: 'str' },
     { field: '_periodo_sort',       label: 'Período',        type: 'num' },
     { field: 'capacidade_instalada',label: 'Cap.Instalada',  type: 'num' },
     { field: 'qtde_atendimentos',   label: 'Qtde Atend.',    type: 'num' },
