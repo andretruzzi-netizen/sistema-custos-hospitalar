@@ -1733,7 +1733,8 @@
           <div id="cap-nova-unidade-nao-implementada" class="form-group full" style="display:none;margin-bottom:20px;">
             <div style="background:#fff8eb;border:1px solid #b45309;border-radius:8px;padding:12px 14px;font-size:13px;color:#7c3d12;">
               ⚠️ O lançamento de capacidade para a unidade de mensuração <strong id="cap-nova-unidade-nome-aviso"></strong> ainda não foi implementado neste sistema.
-              Por enquanto, apenas <strong>Hora</strong> está disponível.
+              Por enquanto, estão disponíveis: <strong>Hora</strong>, <strong>Diária</strong> (UTI/Internação), <strong>Exame</strong> e <strong>Consulta</strong>.
+              Se o CDC já usa uma dessas unidades e este aviso aparece mesmo assim, confira se o nome cadastrado em <strong>Unidades de Mensuração</strong> está escrito exatamente igual (sem espaço extra, sem plural, mesma acentuação).
             </div>
           </div>
 
@@ -5792,7 +5793,7 @@ async function onCapNovaCdcChange() {
   const opt = sel.options[sel.selectedIndex];
   const unidadeInput = document.getElementById('cap-nova-unidade');
 
-  _capNovaUnidade = (opt && opt.value) ? (opt.dataset.unidade || '') : null;
+  _capNovaUnidade = (opt && opt.value) ? (opt.dataset.unidade || '').trim() : null;
   _capNovaGrupoServico = (opt && opt.value) ? (opt.dataset.grupo || '') : null;
   unidadeInput.value = _capNovaUnidade || '';
 
@@ -6772,7 +6773,7 @@ const _subtiposByTipo = {
   'Centro Cirúrgico':    ['Sala Cirúrgica','Sala de Recuperação','Sala de Preparo'],
   'UTI':                 ['Leito Adulto','Leito Pediátrico','Leito Neonatal'],
   'Internação':          ['Leito Adulto','Leito Pediátrico'],
-  'Pronto Atendimento':  ['Leito','Maca','Box'],
+  'Pronto Atendimento':  ['Leito','Maca','Box','Consultório'],
   'Consultório':         ['Consultório'],
   'SADT':                ['Equipamento','Posto de Coleta'],
   'Laboratório':         ['Equipamento','Bancada'],
