@@ -776,9 +776,6 @@
       <div class="nav-item" id="nav-lancamentos" onclick="showSection('lancamentos')">
         <span class="icon">📝</span><span class="label">Lançamentos</span>
       </div>
-      <div class="nav-item" id="nav-receitas" onclick="showSection('receitas')">
-        <span class="icon">💰</span><span class="label">Receitas (Histórico)</span>
-      </div>
     </div>
     <div class="nav-section">
       <div class="nav-label">Rateio</div>
@@ -9173,6 +9170,32 @@ function _enrichSortFields(key, row) {
   return row;
 }
 
+// Comparação "natural" de strings: quebra em blocos de dígitos e não-dígitos,
+// comparando blocos numéricos pelo valor (não pelo texto) — assim "4.2" vem
+// antes de "4.10" (2 < 10), diferente de localeCompare puro que trata como
+// texto e coloca "4.10" antes de "4.2". Regra global para toda comparação de
+// texto do sistema (códigos de conta, códigos de CDC, nomes com números etc.),
+// válida tanto para as tabelas já existentes quanto para novas.
+function _natCompare(a, b) {
+  const sa = String(a), sb = String(b);
+  const re = /(\d+)|(\D+)/g;
+  const pa = sa.match(re) || [], pb = sb.match(re) || [];
+  const len = Math.max(pa.length, pb.length);
+  for (let i = 0; i < len; i++) {
+    const ta = pa[i] || '', tb = pb[i] || '';
+    if (ta === tb) continue;
+    const na = /^\d+$/.test(ta), nb = /^\d+$/.test(tb);
+    if (na && nb) {
+      const diff = parseInt(ta, 10) - parseInt(tb, 10);
+      if (diff !== 0) return diff < 0 ? -1 : 1;
+    } else {
+      const cmp = ta.localeCompare(tb, 'pt-BR', { sensitivity: 'base' });
+      if (cmp !== 0) return cmp;
+    }
+  }
+  return 0;
+}
+
 // Compara dois valores de acordo com o tipo
 function _cmpVal(a, b, type) {
   if (a === null || a === undefined || a === '') return 1;
@@ -9181,7 +9204,7 @@ function _cmpVal(a, b, type) {
     const na = parseFloat(a) || 0, nb = parseFloat(b) || 0;
     return na < nb ? -1 : na > nb ? 1 : 0;
   }
-  return String(a).localeCompare(String(b), 'pt-BR', { sensitivity: 'base' });
+  return _natCompare(a, b);
 }
 
 // ===== ORDENAÇÃO GENÉRICA — TABELAS DE RELATÓRIO CALCULADO =====
@@ -11607,9 +11630,11 @@ async function _detectarLancamentosComRateio() {
 
     const [todos, contas] = await Promise.all([
       sbGet('lancamentos', 'tipo=eq.Original'),
-      sbGet('conta_contabil', 'rateio=eq.Sim&select=id,codigo,descricao,criterio_rateio')
+      sbGet('conta_contabil', 'rateio=eq.Sim&select=id,codigo,descricao,criterio_rateio,categoria')
     ]);
-    const contasComRateio = new Set(contas.map(c => c.id));
+    // Receita e Dedução da Receita nunca entram no fluxo de rateio de custos,
+    // mesmo que a conta esteja (indevidamente) marcada com Rateio=Sim
+    const contasComRateio = new Set(contas.filter(c => !_catEhReceitaOuDeducao(c.categoria)).map(c => c.id));
     // Apenas lançamentos originais cuja conta tem rateio E sem CDC definido
     const pendentes = todos.filter(l => contasComRateio.has(l.conta_id) && !l.cdc_id);
 
@@ -11900,6 +11925,10 @@ function _deveMarcarLanc(r, contaRateioMap) {
   // Preferência explícita do usuário tem prioridade
   if (_lancDesmarcados.has(id)) return false;
   if (_lancMarcados.has(id)) return true;
+  // Receita e Dedução da Receita nunca são pré-marcadas para rateio — rateio
+  // é um conceito de distribuição de Custo/Despesa, não de Receita
+  const contaInfo = (contaRateioMap && r.conta_id) ? contaRateioMap[r.conta_id] : null;
+  if (contaInfo && _catEhReceitaOuDeducao(contaInfo.categoria)) return false;
   // Regra automática: só pré-marca quando ainda não há CDC definido
   // (lançamento realmente pendente de rateio, seja por conta com Rateio=Sim
   // ou qualquer outro lançamento sem CDC ainda atribuído)
@@ -12074,12 +12103,24 @@ async function abrirModalRatearSelecionados() {
   const todosChecks = Array.from(document.querySelectorAll('.cb-lanc-row:checked'));
   // Só lançamentos "Original" podem ser rateados — filtra a seleção mesmo que
   // o usuário tenha marcado também Distribuído/Rateado para excluir
-  const checks = todosChecks.filter(cb => cb.dataset.tipo === 'Original');
+  const originais = todosChecks.filter(cb => cb.dataset.tipo === 'Original');
+  // Receita e Dedução da Receita nunca podem ser rateadas — rateio é conceito
+  // de distribuição de Custo/Despesa entre CDCs, não de Receita
+  const checks = originais.filter(cb => {
+    const info = _contaRateioMap[cb.dataset.contaId] || {};
+    return !_catEhReceitaOuDeducao(info.categoria);
+  });
+  const excluidosPorReceita = originais.length - checks.length;
   if (!checks.length) {
-    toast(todosChecks.length
-      ? 'Os itens selecionados não são do tipo Original — apenas lançamentos Originais podem ser rateados'
-      : 'Nenhum lançamento selecionado', 'error');
+    toast(excluidosPorReceita
+      ? 'Os lançamentos selecionados são de Receita/Dedução da Receita — rateio não se aplica a receitas'
+      : (todosChecks.length
+        ? 'Os itens selecionados não são do tipo Original — apenas lançamentos Originais podem ser rateados'
+        : 'Nenhum lançamento selecionado'), 'error');
     return;
+  }
+  if (excluidosPorReceita) {
+    toast(`${excluidosPorReceita} lançamento(s) de Receita/Dedução foram ignorados — rateio não se aplica a receitas`, 'info');
   }
 
   _ratSelChecksData = checks.map(cb => ({
@@ -12398,7 +12439,7 @@ async function _atualizarRateioCarregarResumo() {
   try {
     const [distribuidos, contas] = await Promise.all([
       sbGet('lancamentos', 'tipo=eq.Distribuído'),
-      sbGet('conta_contabil', 'rateio=eq.Sim&select=id,codigo,descricao,criterio_rateio')
+      sbGet('conta_contabil', 'rateio=eq.Sim&select=id,codigo,descricao,criterio_rateio,categoria')
     ]);
     const contaMap = {};
     contas.forEach(c => { contaMap[c.id] = c; });
@@ -12408,6 +12449,7 @@ async function _atualizarRateioCarregarResumo() {
 
     const filtrados = distribuidos.filter(l => {
       if (!contaMap[l.conta_id]) return false; // conta não tem mais rateio=Sim
+      if (_catEhReceitaOuDeducao(contaMap[l.conta_id].categoria)) return false; // Receita/Dedução nunca entra no rateio
       const valor = l.ano && l.mes ? `${l.ano}-${padMes(l.mes)}` : '';
       const passaDe  = !de  || valor >= de;
       const passaAte = !ate || valor <= ate;
