@@ -76,6 +76,25 @@
   }
   #sidebar.collapsed .logo-text { opacity: 0; }
 
+  /* ===== COMPETÊNCIA GLOBAL (seletor de mês fixo na sidebar) ===== */
+  .sidebar-competencia {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 4px; margin: 10px 16px 6px; padding: 6px 6px;
+    background: #232323; border: 1px solid #2f2f2f; border-radius: 8px;
+    position: relative; transition: opacity .2s; white-space: nowrap;
+  }
+  #sidebar.collapsed .sidebar-competencia { opacity: 0; pointer-events: none; }
+  .comp-nav-btn {
+    background: none; border: none; color: #888; cursor: pointer;
+    font-size: 15px; line-height: 1; padding: 3px 6px; border-radius: 4px; flex-shrink: 0;
+  }
+  .comp-nav-btn:hover { background: #2f2f2f; color: #fff; }
+  .comp-label {
+    flex: 1; text-align: center; color: #fff; font-size: 12px;
+    font-weight: 600; cursor: pointer; font-family: 'SF Mono', 'Fira Code', monospace;
+    letter-spacing: .02em; overflow: hidden;
+  }
+
   .toggle-btn {
     position: fixed;
     left: calc(var(--sidebar-w) + 8px);
@@ -710,6 +729,12 @@
     <div class="logo-icon">🏥</div>
     <div class="logo-text">Sistema de<br>Custos</div>
   </div>
+  <div class="sidebar-competencia" id="sidebar-competencia" title="Competência — mês de referência exibido nas telas do sistema">
+    <button type="button" class="comp-nav-btn" onclick="mudarCompetencia(-1)" title="Mês anterior">‹</button>
+    <div class="comp-label" id="comp-label" onclick="abrirSeletorCompetencia()">—</div>
+    <button type="button" class="comp-nav-btn" onclick="mudarCompetencia(1)" title="Próximo mês">›</button>
+    <input type="month" id="comp-input-hidden" style="position:absolute;opacity:0;width:1px;height:1px;pointer-events:none;" onchange="setCompetenciaGlobal(this.value)">
+  </div>
   <div class="sidebar-nav">
     <div class="nav-section">
       <div class="nav-label">Principal</div>
@@ -854,6 +879,10 @@
   <div class="topbar">
     <!-- Botão hamburguer — visível em TODAS as larguras, fica na topbar -->
     <button class="toggle-btn" id="toggle-btn" onclick="toggleSidebar()" title="Menu">☰</button>
+    <div id="topbar-competencia" onclick="abrirSeletorCompetencia()" title="Competência atual — clique para alterar"
+      style="display:none;align-items:center;gap:5px;cursor:pointer;padding:6px 10px;margin-right:8px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);font-size:12px;font-weight:600;white-space:nowrap;flex-shrink:0;">
+      <span>📅</span><span id="topbar-comp-label">—</span>
+    </div>
     <div style="flex:1;min-width:0;">
       <div class="topbar-title" id="topbar-title">Dashboard</div>
       <div class="topbar-sub" id="topbar-sub">Visão geral do sistema</div>
@@ -4635,7 +4664,114 @@ function toggleSidebar() {
     sidebarCollapsed = !sidebarCollapsed;
     sb.classList.toggle('collapsed', sidebarCollapsed);
   }
+  _updateCompetenciaVisibility();
 }
+
+// =============== COMPETÊNCIA GLOBAL (mês de referência do sistema) ===============
+// Seletor único de mês/ano (estilo Tasy) que serve de padrão para todas as
+// telas com filtro de período. Ao trocar, sobrescreve o filtro "de/até" de
+// cada tela para aquele único mês; se o usuário depois ajustar o filtro
+// avançado de uma tela específica, essa alteração manda naquela tela até a
+// próxima troca da competência global.
+const COMPETENCIA_RANGE_KEYS = ['colab','atend','capnova','ratmet','ratref','dre','receita','lanc'];
+let competenciaGlobal = null;
+
+function _competenciaAtualStr() {
+  const hoje = new Date();
+  return `${hoje.getFullYear()}-${padMes(hoje.getMonth()+1)}`;
+}
+
+function initCompetenciaGlobal() {
+  let salva = null;
+  try { salva = localStorage.getItem('competenciaGlobal'); } catch(e) {}
+  competenciaGlobal = (salva && /^\d{4}-\d{2}$/.test(salva)) ? salva : _competenciaAtualStr();
+  _aplicarCompetenciaGlobal({ reload:false });
+}
+
+function setCompetenciaGlobal(valor) {
+  if (!valor || !/^\d{4}-\d{2}$/.test(valor)) return;
+  competenciaGlobal = valor;
+  try { localStorage.setItem('competenciaGlobal', valor); } catch(e) {}
+  _aplicarCompetenciaGlobal({ reload:true });
+}
+
+function mudarCompetencia(delta) {
+  if (!competenciaGlobal) return;
+  const [ano, mes] = competenciaGlobal.split('-').map(Number);
+  const d = new Date(ano, (mes - 1) + delta, 1);
+  setCompetenciaGlobal(`${d.getFullYear()}-${padMes(d.getMonth()+1)}`);
+}
+
+function abrirSeletorCompetencia() {
+  const inp = document.getElementById('comp-input-hidden');
+  if (!inp) return;
+  inp.value = competenciaGlobal || '';
+  if (inp.showPicker) { try { inp.showPicker(); return; } catch(e) {} }
+  inp.focus();
+  inp.click();
+}
+
+function _aplicarCompetenciaGlobal(opts) {
+  const reload = !opts || opts.reload !== false;
+  const v = competenciaGlobal;
+
+  // Telas com filtro de intervalo (de/até) + períodos específicos
+  COMPETENCIA_RANGE_KEYS.forEach(key => {
+    const de = document.getElementById(key+'-filter-de');
+    const ate = document.getElementById(key+'-filter-ate');
+    if (!de && !ate) return;
+    if (de) de.value = v;
+    if (ate) ate.value = v;
+    if (typeof periodosEspecificos !== 'undefined' && periodosEspecificos[key]) {
+      periodosEspecificos[key] = [];
+      if (typeof renderPeriodoChips === 'function') renderPeriodoChips(key);
+    }
+  });
+
+  // Telas com um único campo de período (sem intervalo)
+  const dashPend = document.getElementById('dash-pend-periodo');
+  if (dashPend) dashPend.value = v;
+  const custouPeriodo = document.getElementById('custou-periodo');
+  if (custouPeriodo) custouPeriodo.value = v;
+
+  _updateCompetenciaLabels();
+  _updateCompetenciaVisibility();
+
+  if (reload) {
+    const ativo = document.querySelector('.section.active');
+    const id = ativo ? ativo.id.replace(/^sec-/, '') : '';
+    const RELOAD_ON_COMPETENCIA = {
+      dashboard:      () => loadPendenciasDashboard(v),
+      colaboradores:  () => loadColaboradores(),
+      atendimentos:   () => loadAtendimentos(),
+      'cap-nova':     () => loadCapNova(),
+      'rat-metragem': () => loadRatMetragem(),
+      'rat-refeicoes':() => loadRatRefeicoes(),
+      dre:            () => renderPeriodoChips('dre'),
+      receitas:       () => loadReceitas(),
+      lancamentos:    () => loadLancamentos(),
+    };
+    if (RELOAD_ON_COMPETENCIA[id]) {
+      try { RELOAD_ON_COMPETENCIA[id](); } catch(e) {}
+    }
+  }
+}
+
+function _updateCompetenciaLabels() {
+  const partes = (competenciaGlobal||'').split('-');
+  const texto = (partes.length===2 && partes[0] && partes[1]) ? `${partes[1]}/${partes[0]}` : '—';
+  const lbl1 = document.getElementById('comp-label');
+  const lbl2 = document.getElementById('topbar-comp-label');
+  if (lbl1) lbl1.textContent = texto;
+  if (lbl2) lbl2.textContent = texto;
+}
+
+function _updateCompetenciaVisibility() {
+  const el = document.getElementById('topbar-competencia');
+  if (!el) return;
+  el.style.display = (sidebarCollapsed || isMobile()) ? 'flex' : 'none';
+}
+window.addEventListener('resize', _updateCompetenciaVisibility);
 
 function openMobileSidebar() {
   document.getElementById('sidebar').classList.add('mobile-open');
@@ -10274,6 +10410,7 @@ function _showApp() {
   } else {
     switcher.style.display = 'none';
   }
+  initCompetenciaGlobal();
   loadDashboard();
 }
 
