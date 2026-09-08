@@ -262,7 +262,7 @@
     box-shadow: var(--shadow);
     max-height: max(320px, calc(100vh - 300px));
     overflow-y: auto;
-    overflow-x: hidden;
+    overflow-x: auto;
   }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
   thead th {
@@ -271,6 +271,18 @@
     color: var(--text3); text-transform: uppercase; letter-spacing: .05em;
     border-bottom: 1px solid var(--border);
     position: sticky; top: 0; z-index: 3;
+  }
+  /* Coluna de Ações (última coluna) sempre visível — fica "grudada" na borda
+     direita da tabela mesmo quando o conteúdo das outras colunas força rolagem
+     horizontal. Corrige os botões de ação somem quando alguma linha tem
+     conteúdo mais largo (badges, texto longo etc.) do que a área visível. */
+  thead th:last-child {
+    position: sticky; right: 0; z-index: 4;
+  }
+  tbody td:last-child {
+    position: sticky; right: 0; z-index: 2;
+    background: var(--bg2);
+    box-shadow: -6px 0 6px -6px rgba(0,0,0,.15);
   }
   thead th.sortable {
     cursor: pointer; user-select: none;
@@ -3754,7 +3766,8 @@
             <div class="form-group full" id="grp-lanc-rateio-info" style="display:none;">
               <div style="background:#ebf3ff;border:1px solid #90bef0;border-left:4px solid #185fa5;border-radius:8px;padding:12px 14px;font-size:13px;color:#185fa5;">
                 🔀 Esta conta tem <strong>Rateio = Sim</strong> (critério: <strong><span id="lanc-conta-criterio"></span></strong>).
-                O CDC será definido automaticamente ao aplicar o rateio após salvar.
+                <br>Deixe o campo <strong>Centro de Custo</strong> abaixo em branco para poder aplicar o rateio depois pelo critério acima.
+                Se você <strong>selecionar um CDC</strong>, este lançamento ficará fixo nesse CDC e <strong>não poderá mais ser rateado</strong>.
               </div>
             </div>
 
@@ -13970,7 +13983,7 @@ async function loadLancamentos() {
         const info = contaInfo;
         if (info.rateio === 'Sim') {
           statusRateioBadge = r.cdc_id
-            ? ` <span class="badge badge-green" title="Esta conta tem rateio definido, mas o lançamento já veio com CDC preenchido — não é necessário ratear novamente">✅ CDC próprio</span>`
+            ? ` <span class="badge badge-green" title="Este lançamento tem um CDC definido — não pode ser rateado. Para ratear, edite o lançamento e remova o CDC">✅ CDC próprio</span>`
             : ` <span class="badge badge-yellow" title="Esta conta tem rateio definido e este lançamento ainda não foi distribuído entre os CDCs">⏳ Aguardando rateio</span>`;
         }
       }
@@ -14146,7 +14159,12 @@ async function saveLanc() {
   const body = {
     empresa_id,
     conta_id,
-    cdc_id: temRateio ? null : cdc_id,
+    // Regra: se o usuário escolher um CDC (mesmo em conta com Rateio=Sim), o
+    // valor é salvo — esse lançamento fica definitivo naquele CDC e não entra
+    // mais no rateio (ver abrirModalRatearSelecionados). Antes esse campo era
+    // zerado aqui sempre que a conta tinha Rateio=Sim, mesmo se o usuário
+    // tivesse escolhido um CDC — por isso a seleção "sumia" ao salvar.
+    cdc_id,
     mes,
     ano: parseInt(ano),
     valor,
@@ -14763,13 +14781,20 @@ async function abrirModalRatearSelecionados() {
   const originais = todosChecks.filter(cb => cb.dataset.tipo === 'Original');
   // Receita e Dedução da Receita nunca podem ser rateadas — rateio é conceito
   // de distribuição de Custo/Despesa entre CDCs, não de Receita
-  const checks = originais.filter(cb => {
+  const semReceita = originais.filter(cb => {
     const info = _contaRateioMap[cb.dataset.contaId] || {};
     return !_catEhReceitaOuDeducao(info.categoria);
   });
-  const excluidosPorReceita = originais.length - checks.length;
+  const excluidosPorReceita = originais.length - semReceita.length;
+  // Regra: um lançamento que já foi salvo com um CDC definido é considerado
+  // definitivo — não pode ser rateado. Para ratear, o usuário precisa editar
+  // o lançamento e remover o CDC (ver saveLanc).
+  const checks = semReceita.filter(cb => !cb.dataset.cdcId);
+  const excluidosPorCdcProprio = semReceita.length - checks.length;
   if (!checks.length) {
-    toast(excluidosPorReceita
+    toast(excluidosPorCdcProprio
+      ? 'Os lançamentos selecionados já têm um CDC definido — edite o lançamento e remova o CDC para poder ratear'
+      : excluidosPorReceita
       ? 'Os lançamentos selecionados são de Receita/Dedução da Receita — rateio não se aplica a receitas'
       : (todosChecks.length
         ? 'Os itens selecionados não são do tipo Original — apenas lançamentos Originais podem ser rateados'
@@ -14778,6 +14803,9 @@ async function abrirModalRatearSelecionados() {
   }
   if (excluidosPorReceita) {
     toast(`${excluidosPorReceita} lançamento(s) de Receita/Dedução foram ignorados — rateio não se aplica a receitas`, 'info');
+  }
+  if (excluidosPorCdcProprio) {
+    toast(`${excluidosPorCdcProprio} lançamento(s) já têm CDC definido e foram ignorados — não podem ser rateados`, 'info');
   }
 
   _ratSelChecksData = checks.map(cb => ({
