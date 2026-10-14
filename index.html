@@ -25594,21 +25594,26 @@ function scExportarComparacao() {
 }
 // =============== RELATÓRIOS DO SIMULADO (PDF executivo e PPT) ===============
 // Bibliotecas carregadas sob demanda (só quando o botão é clicado).
-function _srLib(url, pronta) {
-  return new Promise((ok, erro) => {
-    if (pronta()) return ok();
-    const s = document.createElement('script'); s.src = url;
-    s.onload = () => pronta() ? ok() : erro(new Error('Biblioteca carregada, mas indisponível'));
-    s.onerror = () => erro(new Error('Não foi possível baixar a biblioteca (' + url.split('/').slice(-2).join('/') + '). Verifique a internet.'));
+function _srLib(urls, pronta) {
+  urls = [].concat(urls);
+  const tenta = (k) => new Promise((ok, erro) => {
+    const s = document.createElement('script'); s.src = urls[k];
+    s.onload = () => pronta() ? ok() : erro(new Error('indisponível'));
+    s.onerror = () => { s.remove(); erro(new Error('falha ao baixar')); };
     document.head.appendChild(s);
   });
+  return (async () => {
+    if (pronta()) return;
+    for (let k = 0; k < urls.length; k++) { try { await tenta(k); return; } catch (e) { /* tenta o próximo endereço */ } }
+    throw new Error('Não foi possível baixar a biblioteca (' + urls[0].split('/').slice(-1)[0] + '). Verifique a internet ou se algum bloqueador (adblock/firewall) está barrando CDNs.');
+  })();
 }
 async function _srLibsPdf() {
-  await _srLib('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', () => window.jspdf && window.jspdf.jsPDF);
-  await _srLib('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js', () => window.jspdf.jsPDF.API && window.jspdf.jsPDF.API.autoTable);
+  await _srLib(['https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', 'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js', 'https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js'], () => window.jspdf && window.jspdf.jsPDF);
+  await _srLib(['https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js', 'https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js', 'https://unpkg.com/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js'], () => window.jspdf.jsPDF.API && window.jspdf.jsPDF.API.autoTable);
 }
 async function _srLibPpt() {
-  await _srLib('https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.12.0/pptxgen.bundle.js', () => window.PptxGenJS);
+  await _srLib(['https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js', 'https://unpkg.com/pptxgenjs@3.12.0/dist/pptxgen.bundle.js', 'https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.12.0/pptxgen.bundle.js'], () => window.PptxGenJS);
 }
 
 // ---- formatação ----
