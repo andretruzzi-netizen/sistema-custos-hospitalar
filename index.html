@@ -984,6 +984,9 @@ body:not(.ativ-lab) [data-ativ="laboratorio"]{display:none !important}
       <div class="nav-item" data-ativ="hospital" onclick="showSection('prod-proc')">
         <span class="icon">🩺</span><span class="label">Produção de Procedimentos</span>
       </div>
+      <div class="nav-item" data-ativ="hospital" onclick="showSection('atend-fat')">
+        <span class="icon">🏥</span><span class="label">Atendimentos Faturados</span>
+      </div>
       <div class="nav-item" data-ativ="hospital" onclick="showSection('margem-proc')">
         <span class="icon">📈</span><span class="label">Margem por Procedimento</span>
       </div>
@@ -5061,6 +5064,115 @@ body:not(.ativ-lab) [data-ativ="laboratorio"]{display:none !important}
     </div>
     <!-- /🩺 PRODUÇÃO DE PROCEDIMENTOS POR CONVÊNIO -->
 
+    <!-- ATENDIMENTOS FATURADOS -->
+    <div id="sec-atend-fat" class="section">
+      <div class="panel" style="margin-bottom:18px;">
+        <div class="panel-title">🏥 Atendimentos Faturados</div>
+        <p style="color:var(--text2);font-size:13px;margin-bottom:14px;line-height:1.6;">
+          Base do <strong>custo por atendimento</strong>: o faturamento (um item por linha, com CDC, receita e convênio) cruzado, pelo <strong>nº do atendimento</strong>, com os procedimentos do centro cirúrgico.
+          Cada atendimento é classificado em <strong>Clínico</strong>, <strong>Cirúrgico</strong> ou <strong>Clínico com procedimento</strong>. Nesta etapa: importação, conferência e consulta (o custo de cada item entra na próxima etapa).
+        </p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button id="af-tabbtn-consulta" class="btn btn-primary" onclick="afTab('consulta')">🔎 Consulta</button>
+          <button id="af-tabbtn-importar" class="btn" onclick="afTab('importar')">⬆ Importar</button>
+          <button id="af-tabbtn-modelo" class="btn" onclick="afTab('modelo')">📄 Modelo e regras</button>
+        </div>
+        <div id="af-status" style="font-size:12px;color:var(--text3);margin-top:10px;"></div>
+      </div>
+
+      <div id="af-tab-consulta">
+        <div class="panel" style="margin-bottom:18px;">
+          <div class="form-grid" style="align-items:end;">
+            <div class="form-group"><label>Data-base</label>
+              <select id="af-base" onchange="afCarregar()">
+                <option value="dt_alta">Data da alta</option>
+                <option value="dt_ref">Data de referência (faturamento)</option>
+              </select></div>
+            <div class="form-group"><label>De</label><input type="date" id="af-de" onchange="afCarregar()"></div>
+            <div class="form-group"><label>Até</label><input type="date" id="af-ate" onchange="afCarregar()"></div>
+            <div class="form-group"><label>Tipo de atendimento</label>
+              <select id="af-f-tipo" onchange="afRender()"><option value="">Todos</option><option>Internado</option><option>Pronto Socorro</option><option>Ambulatorial</option><option>Externo</option></select></div>
+            <div class="form-group"><label>Classificação</label>
+              <select id="af-f-classe" onchange="afRender()"><option value="">Todas</option><option>Clínico</option><option>Cirúrgico</option><option>Clínico com procedimento</option></select></div>
+            <div class="form-group"><label>Convênio</label>
+              <select id="af-f-conv" onchange="afRender()"><option value="">Todos os convênios</option></select></div>
+            <div class="form-group"><label>Buscar</label>
+              <input type="text" id="af-f-busca" placeholder="Nº atendimento, procedimento, CID…" oninput="afRender()"></div>
+            <div class="form-group"><label>Ordenar por</label>
+              <select id="af-f-ordem" onchange="afRender()">
+                <option value="atend">Nº do atendimento</option><option value="receita">Maior receita</option>
+                <option value="alta">Alta mais recente</option><option value="internacao">Maior permanência</option><option value="alerta">Com alertas primeiro</option>
+              </select></div>
+            <div class="form-group"><label>Cirúrgico se a 1ª cirurgia ocorre em até (horas)</label>
+              <input type="number" id="af-horas" min="0" step="1" value="48" onchange="afRender()"></div>
+            <div class="form-group"><label>Setup de sala (min por cirurgia)</label>
+              <input type="number" id="af-setup" min="0" step="1" value="20"></div>
+            <div class="form-group" style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="btn btn-primary" onclick="afCarregar()">↻ Carregar</button>
+              <button class="btn" onclick="afUsarCompetencia()" title="Usar o mês da competência do menu lateral">📅 Competência do menu</button>
+              <button class="btn" onclick="afExportar()">⬇ Excel</button>
+              <button class="btn" onclick="afRecalcularLista()" title="Recalcula o resumo da lista (use depois de mudar o setup de sala)">⚙ Recalcular resumos</button>
+            </div>
+          </div>
+        </div>
+        <div id="af-kpis" class="stats-row"></div>
+        <div class="panel" style="margin-bottom:18px;">
+          <div class="panel-title">Atendimentos</div>
+          <div class="table-wrap"><table id="af-tabela"></table></div>
+          <div id="af-rodape" style="font-size:11px;color:var(--text3);margin-top:8px;"></div>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px;">Clique em um atendimento para ver os itens por centro de custo e as cirurgias. “Dias” = permanência entre entrada e alta.</div>
+        </div>
+      </div>
+
+      <div id="af-tab-importar" style="display:none;">
+        <div class="panel" style="margin-bottom:18px;">
+          <div class="panel-title">1) Atendimento faturado (itens)</div>
+          <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">Uma linha por item lançado na conta. Importe esta planilha <strong>primeiro</strong>. Empresa de destino: a selecionada no menu lateral.</p>
+          <input type="file" id="af-file-itens" accept=".xlsx,.xls,.csv" style="display:none;" onchange="afEscolherItens(this)">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn" onclick="document.getElementById('af-file-itens').click()">📂 Escolher planilha…</button>
+            <button class="btn btn-primary" id="af-btn-itens" disabled onclick="afConfirmarItens()">✔ Confirmar importação</button>
+          </div>
+          <div id="af-prev-itens" style="margin-top:12px;"></div>
+        </div>
+        <div class="panel" style="margin-bottom:18px;">
+          <div class="panel-title">2) Centro cirúrgico (procedimentos realizados)</div>
+          <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">Uma linha por procedimento realizado, ligada pelo <strong>NR_ATENDIMENTO</strong>. Pode ser o mesmo arquivo do passo 1 — o sistema encontra a aba certa.</p>
+          <input type="file" id="af-file-cir" accept=".xlsx,.xls,.csv" style="display:none;" onchange="afEscolherCir(this)">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn" onclick="document.getElementById('af-file-cir').click()">📂 Escolher planilha…</button>
+            <button class="btn btn-primary" id="af-btn-cir" disabled onclick="afConfirmarCir()">✔ Confirmar importação</button>
+          </div>
+          <div id="af-prev-cir" style="margin-top:12px;"></div>
+        </div>
+      </div>
+
+      <div id="af-tab-modelo" style="display:none;">
+        <div class="panel" style="margin-bottom:18px;">
+          <div class="panel-title">📄 Modelo de planilha e regras</div>
+          <button class="btn btn-primary" onclick="afBaixarModelo()" style="margin-bottom:14px;">⬇ Baixar modelo de planilha</button>
+          <div style="font-size:13px;color:var(--text2);line-height:1.75;">
+            <strong>Classificação do atendimento (calculada pelo sistema)</strong>
+            <ul style="margin:4px 0 12px 18px;">
+              <li><strong>Clínico</strong>: nenhum procedimento cirúrgico realizado.</li>
+              <li><strong>Cirúrgico</strong>: a primeira cirurgia aconteceu até o prazo escolhido (padrão 48 h) depois da entrada — o paciente veio para operar.</li>
+              <li><strong>Clínico com procedimento</strong>: a primeira cirurgia aconteceu depois desse prazo — internou como clínico e precisou operar.</li>
+            </ul>
+            <strong>Outras regras</strong>
+            <ul style="margin:4px 0 0 18px;">
+              <li>Item com receita zero = não cobrado (ou dentro de pacote — veja as colunas de pacote). Não precisa de marcador.</li>
+              <li>Cirurgia com motivo de exclusão, ou com situação diferente de “Realizada”, fica gravada mas não entra nos cálculos.</li>
+              <li>Procedimento principal do atendimento = o da cirurgia de maior porte (empate: maior tempo de sala).</li>
+              <li>Tempo de sala = entrada→saída da sala + setup de sala (padrão 20 min por cirurgia).</li>
+              <li>Reimportar o mesmo período substitui os dados, não duplica. Paciente: só o código (sem nome nem CPF).</li>
+              <li>Receita líquida = Vl. Item − Vl. Desconto. O custo de cada item será calculado na próxima etapa.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- /ATENDIMENTOS FATURADOS -->
+
     <!-- MARGEM POR PROCEDIMENTO -->
     <div id="sec-margem-proc" class="section">
       <div class="panel" style="margin-bottom:18px;">
@@ -5878,6 +5990,15 @@ body:not(.ativ-lab) [data-ativ="laboratorio"]{display:none !important}
 <div id="toast-container"></div>
 
 <!-- MODAL EXPORT -->
+<div class="modal-overlay" id="modal-af-det">
+  <div class="modal" style="max-width:1150px;width:96%;">
+    <div class="modal-header">
+      <div class="modal-title" id="af-det-titulo">Atendimento</div>
+      <button class="modal-close" onclick="closeModal('modal-af-det')">✕</button>
+    </div>
+    <div id="af-det-corpo" style="max-height:75vh;overflow:auto;"></div>
+  </div>
+</div>
 <div class="modal-overlay" id="modal-export">
   <div class="modal">
     <div class="modal-header">
@@ -6272,7 +6393,8 @@ const _TENANT_TABLES = new Set([
   'exames_lab','producao_exames',
   'mat_med','mat_med_preco','ficha_tecnica','ficha_tecnica_itens',
   'convenios','preco_procedimento','producao_procedimentos','imobilizado',
-  'orcamento_versao','orcamento_linha','orcamento_volume','orcamento_comercial','orcamento_comercial_itens'
+  'orcamento_versao','orcamento_linha','orcamento_volume','orcamento_comercial','orcamento_comercial_itens',
+  'atend_fat_itens','atend_fat_cirurgias','atend_fat_resumo'
 ]);
 
 // ===== REFERÊNCIAS POR ID (o nome é resolvido ao vivo a partir do cadastro) =====
@@ -7291,6 +7413,7 @@ function _reloadActiveSection() {
     'preco-proc':         () => bbGridInit('ppg'),
     'prod-proc':          () => bbGridInit('prg'),
     'margem-proc':        () => mgCarregar(),
+    'atend-fat':          () => { _afPeriodoDaCompetencia(); afCarregar(); },
     'analise-ger':        () => agCarregar(),
     'mc-proc':            () => mcCarregar(),
     'abc-matmed':         () => abcInit(),
@@ -7533,6 +7656,7 @@ function showSection(id) {
   if (id === 'preco-proc') bbGridInit('ppg');
   if (id === 'prod-proc') bbGridInit('prg');
   if (id === 'margem-proc') mgCarregar();
+  if (id === 'atend-fat') afInit();
   if (id === 'analise-ger') agCarregar();
   if (id === 'mc-proc') mcCarregar();
   if (id === 'abc-matmed') abcInit();
@@ -26519,6 +26643,696 @@ function abcExportar() {
   XLSX.writeFile(wb, `curva_abc_matmed_${d.ano}-${d.mes}.xlsx`);
 }
 
+
+// =====================================================================
+// BLOCO D — Atendimentos Faturados (Custo por Atendimento) — ETAPA 1
+// Tabelas: atend_fat_itens, atend_fat_cirurgias, atend_fat_resumo (SQL em atendimento_faturado_setup.sql)
+// Tudo neste bloco usa o prefixo af* / _af*.
+// Parte 1: leitura das planilhas, validações e cálculo do resumo por atendimento (sem tela).
+// =====================================================================
+const _AF_TIPOS_ATEND = ['Internado', 'Pronto Socorro', 'Ambulatorial', 'Externo'];
+const _afNorm = s => String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+const _afTxt = v => v == null ? '' : String(v).trim();
+const _afR2 = n => n === null || n === undefined || !isFinite(n) ? null : Math.round(n * 100) / 100;
+// Código vindo do Excel: número inteiro não pode virar "10101039.0"
+const _afCod = v => {
+  if (v == null || v === '') return '';
+  if (typeof v === 'number') return Number.isInteger(v) ? String(v) : String(v);
+  return String(v).trim();
+};
+const _afNumN = v => {
+  if (v == null || (typeof v === 'string' && v.trim() === '')) return null;
+  const n = (typeof v === 'number') ? v : _ocNum(v);
+  return isFinite(n) ? n : null;
+};
+
+// Data/hora de qualquer jeito que o Excel entregar → 'YYYY-MM-DDTHH:MM:SS' (sem fuso) ou null
+function _afDt(v) {
+  if (v == null || v === '') return null;
+  const p2 = n => String(n).padStart(2, '0');
+  const fmt = (y, mo, d, h, mi, s) => `${y}-${p2(mo)}-${p2(d)}T${p2(h || 0)}:${p2(mi || 0)}:${p2(Math.floor(s || 0))}`;
+  if (v instanceof Date) return isNaN(v) ? null : fmt(v.getFullYear(), v.getMonth() + 1, v.getDate(), v.getHours(), v.getMinutes(), v.getSeconds());
+  if (typeof v === 'number') {
+    if (!(v > 20000 && v < 80000)) return null;
+    const c = XLSX.SSF.parse_date_code(v);
+    return c ? fmt(c.y, c.m, c.d, c.H, c.M, c.S) : null;
+  }
+  const s = String(v).trim(); let m;
+  if ((m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[ T]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/))) return fmt(+m[3], +m[2], +m[1], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
+  if ((m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/))) return fmt(+m[1], +m[2], +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
+  return null;
+}
+// Junta uma coluna de data com outra só de hora ("31/08/2026" + "08:20:44")
+function _afDtJunta(dataV, horaV) {
+  const d = _afDt(dataV); if (!d) return null;
+  let h = '';
+  if (typeof horaV === 'number' && horaV >= 0 && horaV < 1) { const sec = Math.round(horaV * 86400); h = [Math.floor(sec / 3600), Math.floor(sec % 3600 / 60), sec % 60].map(n => String(n).padStart(2, '0')).join(':'); }
+  else { const m = String(horaV == null ? '' : horaV).trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?/); if (m) h = `${m[1].padStart(2, '0')}:${m[2]}:${m[3] || '00'}`; }
+  return h ? d.slice(0, 10) + 'T' + h : d;
+}
+const _afDia = s => s ? String(s).slice(0, 10) : null;
+const _afMs = s => { if (!s) return null; const t = new Date(s).getTime(); return isNaN(t) ? null : t; };
+const _afMin = (a, b) => { const x = _afMs(a), y = _afMs(b); return (x === null || y === null || y < x) ? null : _afR2((y - x) / 60000); };
+
+// ---- normalizadores de texto ----
+function _afTipoAtend(s) {
+  const n = _afNorm(s); if (!n) return '';
+  if (/intern/.test(n)) return 'Internado';
+  if (/pronto|^ps$|urgenc|emerg/.test(n)) return 'Pronto Socorro';
+  if (/ambul/.test(n)) return 'Ambulatorial';
+  if (/extern/.test(n)) return 'Externo';
+  return _afTxt(s);
+}
+function _afTipoConv(s) {
+  const n = _afNorm(s); if (!n) return '';
+  if (/^sus/.test(n)) return 'SUS';
+  if (/partic/.test(n)) return 'Particular';
+  if (/conv/.test(n)) return 'Convênio';
+  return _afTxt(s);
+}
+function _afTipoLinha(s) {
+  const n = _afNorm(s); if (!n) return '';
+  if (/mat|med/.test(n)) return 'Mat/Med';
+  if (/proc/.test(n)) return 'Proc';
+  if (/aprop/.test(n)) return 'Apropriado';
+  return _afTxt(s);
+}
+// Cirurgia, endoscopia ou litotripsia — pela descrição (a coluna TIPO_PROCEDIMENTO da planilha, se vier, manda)
+function _afTipoProc(desc) {
+  const t = String(desc || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  if (/litotrip/.test(t)) return 'Litotripsia';
+  if (/endoscop|colonoscop|gastroscop|broncoscop|cistoscop|ureteroscop|histeroscop|laringoscop|enteroscop|retossigmoidoscop|colangiopancreat|esofagogastroduoden|\begd\b|ecoendoscop/.test(t)) return 'Endoscopia';
+  return 'Cirurgia';
+}
+
+// ---- mapeamento de colunas (aceita variações de nome) ----
+const _AF_ITENS_CAMPOS = {
+  tipo_linha: ['tipo'], nr_atendimento: ['natend', 'noatend', 'nratend', 'numatend', 'nratendimento', 'numeroatendimento', 'atendimento'],
+  nr_conta: ['nconta', 'noconta', 'nrconta', 'numconta'], estabelecimento: ['estabelecimento', 'empresa'],
+  dt_entrada: ['dtentrada'], dt_alta: ['dtalta'], data_entrada: ['dataentrada'], hora_entrada: ['horaentrada'], data_saida: ['datasaida', 'dataalta'], hora_saida: ['horasaida'],
+  dt_ref: ['dtref', 'dtreferencia', 'datareferencia'], convenio: ['convenio'], tipo_convenio: ['tipoconvenio'],
+  cd_medico: ['cdmedico', 'codmedico'], medico: ['medico'], cd_especialidade: ['cdespecialidade', 'codespecialidade'], especialidade: ['especialidade'],
+  cd_item: ['cditem', 'coditem', 'codigoitem'], item: ['item', 'descricaoitem'], qtd: ['qt', 'qtd', 'qtde', 'quantidade'],
+  vl_item: ['vlitem', 'valoritem'], vl_custo_import: ['vlcusto', 'valorcusto'], vl_desconto: ['vldesconto'],
+  vl_original_pacote: ['vloriginalpacote'], vl_dif_pacote: ['vldifpacote'], vl_desconto_conta: ['vldescontoconta'],
+  conta_contabil: ['contacontabil'], cdc_codigo: ['codcdc', 'cdcdc', 'codigocdc', 'cdc'], centro_custo_nome: ['centrocusto'],
+  setor_atendimento: ['setoratendimento', 'setor'], estrutura: ['estrutura'], tipo_atend: ['tipoatend', 'tipoatendimento'],
+  cod_paciente: ['codpaciente', 'codigopaciente', 'cdpaciente', 'codigodopaciente', 'idpaciente'],
+  idade: ['idade'], sexo: ['sexo'], cid: ['cid', 'cidprincipal', 'cid10']
+};
+const _AF_CIR_CAMPOS = {
+  nr_atendimento: ['nratendimento', 'natend', 'noatend', 'atendimento'], nr_cirurgia: ['nrcirurgia', 'ncirurgia', 'nocirurgia', 'cirurgia'],
+  dt_entrada: ['dtentrada'], dt_alta: ['dtalta'], dt_agenda: ['dtagenda'],
+  ent_sala: ['entsalaciru', 'entsala'], sai_sala: ['saisalaciru', 'saisala'], tempo_sala_min: ['tempoentsaicirur', 'temposala'],
+  inicio_proc: ['inicioprocedimento'], fim_proc: ['fimprocedimento'], tempo_proc_min: ['tempoproced', 'tempoprocedimento'],
+  ent_rpa: ['entrpa'], sai_rpa: ['sairpa'], tempo_rpa_min: ['temporpa'],
+  especialidade: ['especialidade'], medico_cirurgiao: ['medicocirurgiao'], medico_anestesista: ['medicoanestesista'], tipo_anestesia: ['dstpanestesia', 'tipoanestesia'],
+  carater: ['caratercirurgia', 'carater'], cd_proc_principal: ['cdprocedimentoprinc', 'cdprocedimentoprincipal'], cd_proc_tuss: ['cdprocedimentotuss'],
+  proc_principal: ['procedimentoprincipal'], cd_proc_realizado: ['codprocedimentorealizado', 'cdprocedimentorealizado'], proc_realizado: ['procedimentosrealizados', 'procedimentorealizado'],
+  convenio: ['dsconvenio', 'convenio'], setor: ['setor'], sala: ['dsagenda', 'sala'], status_cirurgia: ['dsstatuscirurgia', 'statuscirurgia'], status_agenda: ['dsstatusagenda'],
+  motivo_exc: ['motivoexc', 'motivoexclusao'], qt_porte: ['qtporte', 'porte'], ds_porte: ['dsporte'], tipo_procedimento: ['tipoprocedimento']
+};
+function _afMapear(cab, campos) {
+  const norm = cab.map(_afNorm), idx = {};
+  Object.entries(campos).forEach(([campo, aliases]) => {
+    for (const a of aliases) { const j = norm.indexOf(a); if (j >= 0) { idx[campo] = j; break; } }
+  });
+  return idx;
+}
+// Procura, em todas as abas, a primeira que tem as colunas obrigatórias (o cabeçalho pode estar em qualquer das 40 primeiras linhas)
+function _afAcharTabela(wb, campos, obrigatorios) {
+  for (const nome of wb.SheetNames) {
+    const ws = wb.Sheets[nome]; if (!ws || !ws['!ref']) continue;
+    const r0 = XLSX.utils.decode_range(ws['!ref']).s.r;
+    const mat = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: true });
+    for (let i = 0; i < Math.min(mat.length, 40); i++) {
+      const idx = _afMapear(mat[i], campos);
+      if (obrigatorios.every(c => idx[c] !== undefined)) {
+        const lidas = Object.keys(idx).length;
+        const usados = new Set(Object.values(idx));
+        const ignoradas = mat[i].map((h, j) => [h, j]).filter(([h, j]) => _afTxt(h) && !usados.has(j)).map(([h]) => _afTxt(h));
+        return { aba: nome, linhaCab: r0 + i + 1, idx, mat, ini: i + 1, r0, lidas, ignoradas };
+      }
+    }
+  }
+  return null;
+}
+const _afAtendOk = s => /^[A-Za-z0-9._\-\/]{1,25}$/.test(s);
+
+// ---- ITENS FATURADOS: lê a planilha, valida e devolve as linhas prontas para gravar ----
+// ctx: { cdcPorCod: {codigo: cdc}, nomesEmpresa: [texto normalizado] }
+function _afLerItens(wb, ctx) {
+  const t = _afAcharTabela(wb, _AF_ITENS_CAMPOS, ['nr_atendimento', 'cd_item']);
+  if (!t) return { erro: 'Não encontrei nenhuma aba com as colunas "Nº Atend" e "Cd. Item". Confira o cabeçalho da planilha (use o modelo).' };
+  const I = t.idx, get = (r, c) => I[c] === undefined ? '' : r[I[c]];
+  const v = { lidas: 0, validas: 0, ignoradas: 0, erros: [], semCdc: {}, tipoAtendInvalido: {}, altaAntesEntrada: 0, duplicadas: 0, estab: new Set(), semConta: 0 };
+  const rows = [], dup = {};
+  for (let i = t.ini; i < t.mat.length; i++) {
+    const r = t.mat[i], linha = t.r0 + i + 1;
+    const rawAt = get(r, 'nr_atendimento'), atend = _afCod(rawAt);
+    if (!atend) { if (r.some(c => _afTxt(c))) v.ignoradas++; continue; }          // linha sem atendimento (rodapé, observação…)
+    v.lidas++;
+    if (!_afAtendOk(atend)) { v.ignoradas++; v.lidas--; continue; }                // texto de observação na coluna do atendimento
+    const cdItem = _afCod(get(r, 'cd_item'));
+    if (!cdItem) { v.erros.push({ linha, msg: `Atendimento ${atend}: "Cd. Item" vazio` }); continue; }
+    const dtEnt = _afDt(get(r, 'dt_entrada')) || _afDtJunta(get(r, 'data_entrada'), get(r, 'hora_entrada'));
+    const dtAlta = _afDt(get(r, 'dt_alta')) || _afDtJunta(get(r, 'data_saida'), get(r, 'hora_saida'));
+    const dtRef = _afDia(_afDt(get(r, 'dt_ref'))) || _afDia(dtAlta);
+    if (!dtRef) { v.erros.push({ linha, msg: `Atendimento ${atend}: sem "Dt. Ref." e sem "Dt. Alta"` }); continue; }
+    if (dtEnt && dtAlta && _afMs(dtAlta) < _afMs(dtEnt)) v.altaAntesEntrada++;
+    const conta = _afCod(get(r, 'nr_conta')); if (conta && !_afAtendOk(conta)) { v.erros.push({ linha, msg: `Atendimento ${atend}: "Nº Conta" com caracteres inválidos` }); continue; }
+    if (!conta) v.semConta++;
+    const cod = _afCod(get(r, 'cdc_codigo')), cdc = cod ? ctx.cdcPorCod[cod] : null;
+    if (!cdc) v.semCdc[cod || '(vazio)'] = (v.semCdc[cod || '(vazio)'] || 0) + 1;
+    const tipoAt = _afTipoAtend(get(r, 'tipo_atend'));
+    if (tipoAt && !_AF_TIPOS_ATEND.includes(tipoAt)) v.tipoAtendInvalido[tipoAt] = (v.tipoAtendInvalido[tipoAt] || 0) + 1;
+    const estab = _afTxt(get(r, 'estabelecimento')); if (estab) v.estab.add(estab);
+    const qtd = _afNumN(get(r, 'qtd')), n = c => { const x = _afNumN(get(r, c)); return x === null ? 0 : x; };
+    const sx = _afTxt(get(r, 'sexo')).toUpperCase().slice(0, 1), idade = _afNumN(get(r, 'idade'));
+    const [y, m] = dtRef.split('-');
+    const row = {
+      nr_atendimento: atend, nr_conta: conta, tipo_linha: _afTipoLinha(get(r, 'tipo')),
+      dt_entrada: dtEnt, dt_alta: dtAlta, dt_ref: dtRef, mes: m, ano: parseInt(y),
+      convenio: _afTxt(get(r, 'convenio')), tipo_convenio: _afTipoConv(get(r, 'tipo_convenio')),
+      cd_medico: _afCod(get(r, 'cd_medico')), medico: _afTxt(get(r, 'medico')),
+      cd_especialidade: _afCod(get(r, 'cd_especialidade')), especialidade: _afTxt(get(r, 'especialidade')),
+      cd_item: cdItem, item: _afTxt(get(r, 'item')), qtd: qtd === null ? 1 : qtd,
+      vl_item: n('vl_item'), vl_custo_import: _afNumN(get(r, 'vl_custo_import')), vl_desconto: n('vl_desconto'),
+      vl_original_pacote: n('vl_original_pacote'), vl_dif_pacote: n('vl_dif_pacote'), vl_desconto_conta: n('vl_desconto_conta'),
+      conta_contabil: _afCod(get(r, 'conta_contabil')), cdc_codigo: cod, cdc_id: cdc ? cdc.id : null,
+      centro_custo_nome: _afTxt(get(r, 'centro_custo_nome')), setor_atendimento: _afTxt(get(r, 'setor_atendimento')),
+      estrutura: _afTxt(get(r, 'estrutura')), tipo_atend: tipoAt,
+      cod_paciente: _afCod(get(r, 'cod_paciente')), idade: idade === null ? null : Math.round(idade), sexo: /^[MF]$/.test(sx) ? sx : null, cid: _afTxt(get(r, 'cid')).toUpperCase()
+    };
+    const k = [atend, conta, cdItem, row.qtd, row.vl_item, cod].join('|'); dup[k] = (dup[k] || 0) + 1;
+    rows.push(row);
+  }
+  v.validas = rows.length;
+  v.duplicadas = Object.values(dup).reduce((s, c) => s + (c > 1 ? c - 1 : 0), 0);
+  const nomes = ctx.nomesEmpresa || [];
+  v.estabDiferente = [...v.estab].filter(e => { const n = _afNorm(e); return nomes.length && !nomes.some(x => x && (x.includes(n) || n.includes(x))); });
+  const datas = rows.map(r => r.dt_ref).sort();
+  return { rows, v, aba: t.aba, linhaCab: t.linhaCab, colunas: t.lidas, ignoradasCols: t.ignoradas, ini: datas[0] || null, fim: datas[datas.length - 1] || null, atendimentos: [...new Set(rows.map(r => r.nr_atendimento))] };
+}
+
+// ---- CENTRO CIRÚRGICO: lê, valida e devolve as linhas ----
+function _afLerCirurgias(wb) {
+  const t = _afAcharTabela(wb, _AF_CIR_CAMPOS, ['nr_atendimento', 'nr_cirurgia']);
+  if (!t) return { erro: 'Não encontrei nenhuma aba com as colunas "NR_ATENDIMENTO" e "NR_CIRURGIA". Confira o cabeçalho da planilha (use o modelo).' };
+  const I = t.idx, get = (r, c) => I[c] === undefined ? '' : r[I[c]];
+  const v = { lidas: 0, validas: 0, excluidas: 0, ignoradas: 0, erros: [], duplicadas: 0, semTempoSala: 0, semPorte: 0 };
+  const rows = [], dup = {};
+  for (let i = t.ini; i < t.mat.length; i++) {
+    const r = t.mat[i], linha = t.r0 + i + 1;
+    const atend = _afCod(get(r, 'nr_atendimento'));
+    if (!atend) { if (r.some(c => _afTxt(c))) v.ignoradas++; continue; }
+    if (!_afAtendOk(atend)) { v.ignoradas++; continue; }
+    v.lidas++;
+    const cir = _afCod(get(r, 'nr_cirurgia'));
+    if (!cir || !_afAtendOk(cir)) { v.erros.push({ linha, msg: `Atendimento ${atend}: "NR_CIRURGIA" vazio ou inválido` }); continue; }
+    const dt = c => _afDt(get(r, c));
+    const ent = dt('ent_sala'), sai = dt('sai_sala'), ini = dt('inicio_proc'), fim = dt('fim_proc'), eR = dt('ent_rpa'), sR = dt('sai_rpa');
+    const tSala = _afNumN(get(r, 'tempo_sala_min')) ?? _afMin(ent, sai), tProc = _afNumN(get(r, 'tempo_proc_min')) ?? _afMin(ini, fim), tRpa = _afNumN(get(r, 'tempo_rpa_min')) ?? _afMin(eR, sR);
+    const motivo = _afTxt(get(r, 'motivo_exc')), stC = _afTxt(get(r, 'status_cirurgia'));
+    const valida = !motivo && (!stC || /realiz/i.test(stC));
+    const procR = _afTxt(get(r, 'proc_realizado')), procP = _afTxt(get(r, 'proc_principal'));
+    const tp = _afTxt(get(r, 'tipo_procedimento')) || _afTipoProc(procR + ' ' + procP);
+    const porte = _afNumN(get(r, 'qt_porte'));
+    const row = {
+      nr_atendimento: atend, nr_cirurgia: cir, dt_entrada: dt('dt_entrada'), dt_alta: dt('dt_alta'), dt_agenda: _afDia(dt('dt_agenda')),
+      ent_sala: ent, sai_sala: sai, inicio_proc: ini, fim_proc: fim, ent_rpa: eR, sai_rpa: sR,
+      tempo_sala_min: _afR2(tSala), tempo_proc_min: _afR2(tProc), tempo_rpa_min: _afR2(tRpa),
+      especialidade: _afTxt(get(r, 'especialidade')), medico_cirurgiao: _afTxt(get(r, 'medico_cirurgiao')), medico_anestesista: _afTxt(get(r, 'medico_anestesista')),
+      tipo_anestesia: _afTxt(get(r, 'tipo_anestesia')), carater: _afTxt(get(r, 'carater')),
+      cd_proc_principal: _afCod(get(r, 'cd_proc_principal')), cd_proc_tuss: _afCod(get(r, 'cd_proc_tuss')), proc_principal: procP,
+      cd_proc_realizado: _afCod(get(r, 'cd_proc_realizado')), proc_realizado: procR,
+      convenio: _afTxt(get(r, 'convenio')), setor: _afTxt(get(r, 'setor')), sala: _afTxt(get(r, 'sala')),
+      status_cirurgia: stC, status_agenda: _afTxt(get(r, 'status_agenda')), motivo_exc: motivo,
+      qt_porte: porte, ds_porte: _afTxt(get(r, 'ds_porte')), tipo_procedimento: tp, valida
+    };
+    if (!valida) v.excluidas++;
+    else {
+      if (row.tempo_sala_min === null) v.semTempoSala++;
+      if (porte === null) v.semPorte++;
+      const k = [atend, cir, row.cd_proc_realizado, ent, ini].join('|'); dup[k] = (dup[k] || 0) + 1;
+    }
+    rows.push(row);
+  }
+  v.validas = rows.filter(r => r.valida).length;
+  v.duplicadas = Object.values(dup).reduce((s, c) => s + (c > 1 ? c - 1 : 0), 0);
+  return { rows, v, aba: t.aba, linhaCab: t.linhaCab, colunas: t.lidas, ignoradasCols: t.ignoradas, atendimentos: [...new Set(rows.map(r => r.nr_atendimento))] };
+}
+
+// ---- RESUMO de UM atendimento (itens + cirurgias) ----
+// P = { setup: minutos de setup de sala somados a cada cirurgia }
+function _afCalcResumo(itens, cirsTodas, P) {
+  const setup = (P && P.setup) || 0;
+  const cirs = cirsTodas.filter(c => c.valida !== false);
+  const r = {};
+  const peso = i => (Math.abs(Number(i.vl_item)) || 0) + 0.0001;
+  const moda = campo => { const m = {}; itens.forEach(i => { const x = i[campo]; if (x) m[x] = (m[x] || 0) + peso(i); }); const k = Object.keys(m).sort((a, b) => m[b] - m[a]); return k[0] || null; };
+  const primeiro = campo => { const i = itens.find(x => x[campo] !== null && x[campo] !== undefined && x[campo] !== ''); return i ? i[campo] : null; };
+  const presentes = new Set(itens.map(i => i.tipo_atend).filter(Boolean));
+  r.tipo_atend = _AF_TIPOS_ATEND.find(t => presentes.has(t)) || [...presentes][0] || null;   // Internado > Pronto Socorro > Ambulatorial > Externo
+  r.tipo_convenio = moda('tipo_convenio'); r.convenio = moda('convenio'); r.especialidade = moda('especialidade'); r.medico = moda('medico');
+  r.cod_paciente = primeiro('cod_paciente'); r.idade = primeiro('idade'); r.sexo = primeiro('sexo'); r.cid = primeiro('cid');
+  const dts = (campo) => [...itens.map(i => i[campo]), ...cirsTodas.map(c => c[campo])].filter(Boolean).sort();
+  const ents = dts('dt_entrada'), altas = dts('dt_alta');
+  r.dt_entrada = ents[0] || null; r.dt_alta = altas[altas.length - 1] || null;
+  const refs = itens.map(i => i.dt_ref).filter(Boolean).sort(); r.dt_ref = refs[refs.length - 1] || null;
+  r.tempo_internacao_h = (r.dt_entrada && r.dt_alta && _afMs(r.dt_alta) >= _afMs(r.dt_entrada)) ? _afR2((_afMs(r.dt_alta) - _afMs(r.dt_entrada)) / 36e5) : null;
+  r.n_contas = new Set(itens.map(i => i.nr_conta).filter(Boolean)).size || (itens.length ? 1 : 0);
+  r.n_itens = itens.length;
+  const sum = c => itens.reduce((s, i) => s + (Number(i[c]) || 0), 0);
+  r.receita_bruta = _afR2(sum('vl_item')); r.desconto = _afR2(sum('vl_desconto')); r.receita_liquida = _afR2(r.receita_bruta - r.desconto);
+  r.n_itens_sem_cdc = itens.filter(i => !i.cdc_id).length;
+  r.n_itens_cc = itens.filter(i => /cirurg/i.test((i.setor_atendimento || '') + ' ' + (i.centro_custo_nome || ''))).length;
+  // cirurgias: agrupa por nº da cirurgia (uma cirurgia pode ter várias linhas = vários procedimentos)
+  const grupos = {};
+  cirs.forEach(c => { (grupos[c.nr_cirurgia] = grupos[c.nr_cirurgia] || []).push(c); });
+  const gs = Object.values(grupos);
+  r.n_cirurgias = gs.length; r.n_procedimentos = cirs.length;
+  const inicioDe = g => g[0].ent_sala || g[0].inicio_proc || (g[0].dt_agenda ? g[0].dt_agenda + 'T00:00:00' : null);
+  const prims = gs.map(inicioDe).filter(Boolean).sort();
+  r.dt_primeira_cirurgia = prims[0] || null;
+  r.horas_ate_cirurgia = (r.dt_primeira_cirurgia && r.dt_entrada) ? _afR2((_afMs(r.dt_primeira_cirurgia) - _afMs(r.dt_entrada)) / 36e5) : null;
+  const porteDe = g => Math.max(-1, ...g.map(c => c.qt_porte === null || c.qt_porte === undefined ? -1 : Number(c.qt_porte)));
+  const princ = gs.slice().sort((a, b) => (porteDe(b) - porteDe(a)) || ((b[0].tempo_sala_min || 0) - (a[0].tempo_sala_min || 0)))[0];
+  if (princ) {
+    const c = princ[0];
+    r.cd_proc_principal = c.cd_proc_principal || c.cd_proc_realizado || null; r.proc_principal = c.proc_principal || c.proc_realizado || null;
+    r.porte_principal = porteDe(princ) < 0 ? null : porteDe(princ); r.tipo_procedimento = c.tipo_procedimento || null;
+  } else { r.cd_proc_principal = null; r.proc_principal = null; r.porte_principal = null; r.tipo_procedimento = null; }
+  r.tempo_sala_min = gs.length ? _afR2(gs.reduce((s, g) => s + (g[0].tempo_sala_min || 0) + setup, 0)) : null;
+  const somaOuNull = campo => gs.some(g => g[0][campo] !== null && g[0][campo] !== undefined) ? _afR2(gs.reduce((s, g) => s + (g[0][campo] || 0), 0)) : null;
+  r.tempo_proc_min = somaOuNull('tempo_proc_min');
+  r.tempo_rpa_min = somaOuNull('tempo_rpa_min');
+  return r;
+}
+
+// Clínico / Cirúrgico / Clínico com procedimento (calculado na hora, com o prazo em horas escolhido na tela)
+function _afClasse(r, limiteH) {
+  if (!r.n_procedimentos) return 'Clínico';
+  const h = r.horas_ate_cirurgia;
+  return (h === null || h === undefined || h <= limiteH) ? 'Cirúrgico' : 'Clínico com procedimento';
+}
+
+// ---------------------------------------------------------------------
+// Parte 2: gravação no banco (importação + recálculo do resumo)
+// ---------------------------------------------------------------------
+sectionMeta['atend-fat'] = { title: 'Atendimentos Faturados', sub: 'Importação do faturamento por atendimento e do centro cirúrgico — consulta com classificação clínico / cirúrgico' };
+
+const _afEl = id => document.getElementById(id);
+const _afCols = {
+  itens: 'nr_atendimento,nr_conta,tipo_atend,tipo_convenio,convenio,especialidade,medico,cod_paciente,idade,sexo,cid,dt_entrada,dt_alta,dt_ref,vl_item,vl_desconto,cdc_id,setor_atendimento,centro_custo_nome',
+  cirs: 'nr_atendimento,nr_cirurgia,dt_entrada,dt_alta,dt_agenda,ent_sala,inicio_proc,tempo_sala_min,tempo_proc_min,tempo_rpa_min,cd_proc_principal,cd_proc_realizado,proc_principal,proc_realizado,qt_porte,tipo_procedimento,valida'
+};
+let _afImp = { itens: null, cir: null };
+let _afDados = [], _afCdcs = null, _afCdcsEmpresa = null, _afVista = [];
+
+function _afParams() {
+  const setup = Math.max(0, parseFloat((_afEl('af-setup') || {}).value));
+  return { setup: isFinite(setup) ? setup : 20 };
+}
+function _afLimiteH() { const h = parseFloat((_afEl('af-horas') || {}).value); return isFinite(h) && h >= 0 ? h : 48; }
+function _afStatus(t) { const el = _afEl('af-status'); if (el) el.textContent = t || ''; }
+const _afBRL = v => _labBRL(v);
+function _afFmtDt(s) {
+  if (!s) return '—';
+  const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/); if (!m) return s;
+  return `${m[3]}/${m[2]}/${m[1]}` + (m[4] ? ` ${m[4]}:${m[5]}` : '');
+}
+async function _afCarregarCdcs() {
+  if (_afCdcs && _afCdcsEmpresa === empresaGlobal) return _afCdcs;
+  const rows = await _ftGetAll('cdc', `empresa_id=eq.${empresaGlobal}&select=id,codigo_cdc,centro_custo,sigla`);
+  _afCdcs = rows; _afCdcsEmpresa = empresaGlobal; return rows;
+}
+function _afCdcPorCodigo(cdcs) { const m = {}; cdcs.forEach(c => { if (c.codigo_cdc != null && String(c.codigo_cdc).trim() !== '') m[String(c.codigo_cdc).trim()] = c; }); return m; }
+function _afNomeEmpresa() { const e = (_empresasGlobalCache || []).find(x => String(x.id) === String(empresaGlobal)); return e || null; }
+let _afEmpNomes = { id: null, nomes: [] };
+async function _afEmpresaNomesNorm() {
+  if (_afEmpNomes.id === empresaGlobal) return _afEmpNomes.nomes;
+  let nomes = [];
+  try { const r = await sbGet('empresas', `id=eq.${empresaGlobal}&select=id,razao,fantasia`); if (r[0]) nomes = [_afNorm(r[0].razao), _afNorm(r[0].fantasia)].filter(Boolean); } catch (e) { nomes = []; }
+  _afEmpNomes = { id: empresaGlobal, nomes }; return nomes;
+}
+const _afChunk = (arr, n) => { const o = []; for (let i = 0; i < arr.length; i += n) o.push(arr.slice(i, i + n)); return o; };
+const _afIn = lista => 'in.(' + lista.map(x => encodeURIComponent(x)).join(',') + ')';
+
+// Recalcula e grava o resumo dos atendimentos informados (lê itens + cirurgias do banco)
+async function _afRecalcular(atendimentos, onProgress) {
+  const emp = empresaGlobal, P = _afParams(), lotes = _afChunk(atendimentos, 60);
+  let feitos = 0, semItens = 0;
+  for (let i = 0; i < lotes.length; i += 3) {
+    await Promise.all(lotes.slice(i, i + 3).map(async lote => {
+      const f = `empresa_id=eq.${emp}&nr_atendimento=${_afIn(lote)}`;
+      const [itens, cirs] = await Promise.all([
+        _ftGetAll('atend_fat_itens', `${f}&select=${_afCols.itens}`),
+        _ftGetAll('atend_fat_cirurgias', `${f}&select=${_afCols.cirs}`)
+      ]);
+      const pi = {}, pc = {};
+      itens.forEach(x => (pi[x.nr_atendimento] = pi[x.nr_atendimento] || []).push(x));
+      cirs.forEach(x => (pc[x.nr_atendimento] = pc[x.nr_atendimento] || []).push(x));
+      const novos = [];
+      lote.forEach(a => {
+        if (!pi[a]) { semItens++; return; }
+        novos.push({ empresa_id: emp, nr_atendimento: a, ..._afCalcResumo(pi[a], pc[a] || [], P) });
+      });
+      await _ocDelWhere('atend_fat_resumo', `empresa_id=eq.${emp}&nr_atendimento=${_afIn(lote)}`);
+      await _ocPostMany('atend_fat_resumo', novos);
+      feitos += lote.length;
+      if (onProgress) onProgress(feitos, atendimentos.length);
+    }));
+  }
+  return { feitos, semItens };
+}
+
+// ---------------------------------------------------------------------
+// Parte 3: importação (escolher arquivo → conferir → confirmar)
+// ---------------------------------------------------------------------
+function _afLerArquivo(inp, cb) {
+  const f = inp.files && inp.files[0]; inp.value = '';
+  if (!f) return;
+  const rd = new FileReader();
+  rd.onload = e => { try { cb(XLSX.read(e.target.result, { type: 'array' }), f.name); } catch (err) { toast('Erro ao ler a planilha: ' + err.message, 'error'); } };
+  rd.readAsArrayBuffer(f);
+}
+function _afLista(titulo, cor, itens, max) {
+  if (!itens.length) return '';
+  const mostra = itens.slice(0, max || 8).map(x => `<li>${_labEsc(x)}</li>`).join('');
+  return `<div style="margin-top:8px;"><div style="font-size:12px;font-weight:600;color:${cor};">${titulo}</div><ul style="margin:4px 0 0 18px;font-size:12px;color:var(--text2);line-height:1.6;">${mostra}${itens.length > (max || 8) ? `<li>… e mais ${itens.length - (max || 8)}</li>` : ''}</ul></div>`;
+}
+async function afEscolherItens(inp) {
+  if (!empresaGlobal) { toast('Selecione a Empresa no menu lateral.', 'error'); inp.value = ''; return; }
+  _afLerArquivo(inp, async (wb, nome) => {
+    const box = _afEl('af-prev-itens'); box.innerHTML = '<div style="color:var(--text3);font-size:12px;">Lendo a planilha…</div>';
+    const cdcs = await _afCarregarCdcs();
+    const res = _afLerItens(wb, { cdcPorCod: _afCdcPorCodigo(cdcs), nomesEmpresa: await _afEmpresaNomesNorm() });
+    if (res.erro) { _afImp.itens = null; box.innerHTML = `<div style="color:var(--danger);font-size:13px;">⚠️ ${_labEsc(res.erro)}</div>`; _afEl('af-btn-itens').disabled = true; return; }
+    res.arquivo = nome; _afImp.itens = res;
+    const v = res.v, avisos = [], erros = [];
+    const sc = Object.entries(v.semCdc).sort((a, b) => b[1] - a[1]);
+    if (sc.length) avisos.push(`${sc.reduce((s, x) => s + x[1], 0)} item(ns) com Cód CDC que não existe no cadastro: ` + sc.slice(0, 6).map(([c, n]) => `${c} (${n})`).join(', ') + (sc.length > 6 ? '…' : '') + ' — ficam sem CDC até você cadastrar o CDC e reimportar.');
+    const ta = Object.entries(v.tipoAtendInvalido); if (ta.length) avisos.push('Tipo de atendimento fora dos 4 padrões (Internado, Pronto Socorro, Ambulatorial, Externo): ' + ta.map(([t, n]) => `"${t}" (${n})`).join(', '));
+    if (v.altaAntesEntrada) avisos.push(`${v.altaAntesEntrada} linha(s) com Dt. Alta anterior à Dt. Entrada.`);
+    if (v.duplicadas) avisos.push(`${v.duplicadas} linha(s) idêntica(s) a outra (mesmo atendimento, conta, item, quantidade, valor e CDC). Foram mantidas; confira se não é repetição do relatório.`);
+    if (v.semConta) avisos.push(`${v.semConta} linha(s) sem "Nº Conta".`);
+    if (v.estabDiferente.length) avisos.push(`O Estabelecimento da planilha (${v.estabDiferente.slice(0, 3).join('; ')}) não parece ser a empresa selecionada (${(_afNomeEmpresa() || {}).razao || '—'}). Confira se escolheu o hospital certo.`);
+    v.erros.slice(0, 200).forEach(e => erros.push(`Linha ${e.linha}: ${e.msg}`));
+    const ok = res.rows.length > 0;
+    box.innerHTML = `
+      <div style="font-size:13px;line-height:1.7;">
+        <strong>${_labEsc(nome)}</strong> — aba “${_labEsc(res.aba)}”, cabeçalho na linha ${res.linhaCab}; ${res.colunas} colunas reconhecidas.<br>
+        <span style="color:${ok ? '#3f7d5e' : 'var(--danger)'};font-weight:600;">${res.rows.length.toLocaleString('pt-BR')} item(ns) válidos</span> de ${res.atendimentos.length.toLocaleString('pt-BR')} atendimento(s)
+        · Dt. Ref. de ${_afFmtDt(res.ini)} a ${_afFmtDt(res.fim)}
+        ${v.erros.length ? ` · <span style="color:var(--danger);">${v.erros.length} com erro (não serão importados)</span>` : ''}
+        ${v.ignoradas ? ` · ${v.ignoradas} linha(s) de texto/rodapé ignoradas` : ''}
+      </div>
+      ${_afLista('⚠️ Avisos', '#d29922', avisos, 10)}${_afLista('❌ Erros', 'var(--danger)', erros, 8)}
+      ${res.ignoradasCols.length ? `<details style="margin-top:8px;font-size:11px;color:var(--text3);"><summary>Colunas da planilha que o sistema não usa (${res.ignoradasCols.length})</summary>${_labEsc(res.ignoradasCols.join(' · '))}</details>` : ''}
+      <div style="font-size:11px;color:var(--text3);margin-top:8px;">Ao confirmar, os itens dos mesmos atendimentos com Dt. Ref. dentro de ${_afFmtDt(res.ini)} a ${_afFmtDt(res.fim)} são <strong>substituídos</strong> (reimportar o mesmo período não duplica).</div>`;
+    _afEl('af-btn-itens').disabled = !ok;
+  });
+}
+async function afEscolherCir(inp) {
+  if (!empresaGlobal) { toast('Selecione a Empresa no menu lateral.', 'error'); inp.value = ''; return; }
+  _afLerArquivo(inp, async (wb, nome) => {
+    const box = _afEl('af-prev-cir'); box.innerHTML = '<div style="color:var(--text3);font-size:12px;">Lendo a planilha…</div>';
+    const res = _afLerCirurgias(wb);
+    if (res.erro) { _afImp.cir = null; box.innerHTML = `<div style="color:var(--danger);font-size:13px;">⚠️ ${_labEsc(res.erro)}</div>`; _afEl('af-btn-cir').disabled = true; return; }
+    res.arquivo = nome; _afImp.cir = res;
+    // atendimentos da planilha que ainda não têm itens faturados importados
+    let semFat = [];
+    try {
+      const existentes = new Set();
+      for (const lote of _afChunk(res.atendimentos, 100)) {
+        const r = await sbGet('atend_fat_resumo', `empresa_id=eq.${empresaGlobal}&nr_atendimento=${_afIn(lote)}&select=nr_atendimento&limit=1000`);
+        r.forEach(x => existentes.add(x.nr_atendimento));
+      }
+      semFat = res.atendimentos.filter(a => !existentes.has(a));
+    } catch (e) { semFat = []; }
+    res.semFaturamento = semFat;
+    const v = res.v, avisos = [], erros = [];
+    if (semFat.length) avisos.push(`${semFat.length} atendimento(s) da planilha ainda não têm itens faturados importados (ex.: ${semFat.slice(0, 5).join(', ')}). Importe primeiro o atendimento faturado; as cirurgias ficam guardadas e entram no resumo quando os itens chegarem.`);
+    if (v.excluidas) avisos.push(`${v.excluidas} linha(s) com motivo de exclusão ou cirurgia não realizada — ficam gravadas, mas não entram nos cálculos.`);
+    if (v.duplicadas) avisos.push(`${v.duplicadas} linha(s) idêntica(s) (mesmo atendimento, cirurgia, procedimento realizado e horários). Foram mantidas e contam como procedimentos separados; confira se não é repetição do relatório.`);
+    if (v.semTempoSala) avisos.push(`${v.semTempoSala} linha(s) sem tempo de sala (nem entrada/saída da sala).`);
+    if (v.semPorte) avisos.push(`${v.semPorte} linha(s) sem porte — o procedimento principal do atendimento usa o porte para desempatar.`);
+    v.erros.slice(0, 200).forEach(e => erros.push(`Linha ${e.linha}: ${e.msg}`));
+    const ok = res.rows.length > 0;
+    box.innerHTML = `
+      <div style="font-size:13px;line-height:1.7;">
+        <strong>${_labEsc(nome)}</strong> — aba “${_labEsc(res.aba)}”, cabeçalho na linha ${res.linhaCab}; ${res.colunas} colunas reconhecidas.<br>
+        <span style="color:${ok ? '#3f7d5e' : 'var(--danger)'};font-weight:600;">${v.validas.toLocaleString('pt-BR')} procedimento(s) válidos</span>
+        em ${new Set(res.rows.filter(r => r.valida).map(r => r.nr_cirurgia)).size.toLocaleString('pt-BR')} cirurgia(s) de ${res.atendimentos.length.toLocaleString('pt-BR')} atendimento(s)
+        ${v.erros.length ? ` · <span style="color:var(--danger);">${v.erros.length} com erro</span>` : ''}
+      </div>
+      ${_afLista('⚠️ Avisos', '#d29922', avisos, 10)}${_afLista('❌ Erros', 'var(--danger)', erros, 8)}
+      ${res.ignoradasCols.length ? `<details style="margin-top:8px;font-size:11px;color:var(--text3);"><summary>Colunas da planilha que o sistema não usa (${res.ignoradasCols.length})</summary>${_labEsc(res.ignoradasCols.join(' · '))}</details>` : ''}
+      <div style="font-size:11px;color:var(--text3);margin-top:8px;">Ao confirmar, todas as cirurgias dos atendimentos desta planilha são <strong>substituídas</strong> pelas da planilha.</div>`;
+    _afEl('af-btn-cir').disabled = !ok;
+  });
+}
+
+const afConfirmarItens = _guardAsync('afConfirmarItens', async function () {
+  const res = _afImp.itens; if (!res || !res.rows.length || !empresaGlobal) return;
+  if (!confirm(`Importar ${res.rows.length.toLocaleString('pt-BR')} item(ns) de ${res.atendimentos.length.toLocaleString('pt-BR')} atendimento(s)?\nOs itens desses atendimentos com Dt. Ref. de ${_afFmtDt(res.ini)} a ${_afFmtDt(res.fim)} serão substituídos.`)) return;
+  const btn = _afEl('af-btn-itens'); btn.disabled = true;
+  try {
+    const lote = 'L' + Date.now();
+    _afStatus('Removendo itens anteriores desses atendimentos…');
+    for (const par of _afChunk(res.atendimentos, 150)) {
+      await _ocDelWhere('atend_fat_itens', `empresa_id=eq.${empresaGlobal}&nr_atendimento=${_afIn(par)}&dt_ref=gte.${res.ini}&dt_ref=lte.${res.fim}`);
+    }
+    const linhas = res.rows.map(r => ({ ...r, empresa_id: empresaGlobal, lote_id: lote, criado_em: Date.now(), criado_por: _currentUserEmail() }));
+    for (let i = 0; i < linhas.length; i += 2000) {
+      _afStatus(`Gravando itens… ${Math.min(i + 2000, linhas.length).toLocaleString('pt-BR')} de ${linhas.length.toLocaleString('pt-BR')}`);
+      await _ocPostMany('atend_fat_itens', linhas.slice(i, i + 2000));
+    }
+    const r = await _afRecalcular(res.atendimentos, (f, t) => _afStatus(`Calculando resumo por atendimento… ${f.toLocaleString('pt-BR')} de ${t.toLocaleString('pt-BR')}`));
+    _afStatus('');
+    _afImp.itens = null; _afEl('af-prev-itens').innerHTML = `<div style="color:#3f7d5e;font-size:13px;">✅ ${linhas.length.toLocaleString('pt-BR')} item(ns) importados; resumo calculado para ${r.feitos.toLocaleString('pt-BR')} atendimento(s).</div>`;
+    toast('Atendimento faturado importado!', 'success');
+  } catch (e) {
+    _afStatus(''); btn.disabled = false;
+    const msg = String(e.message || e);
+    toast('Erro na importação: ' + (/atend_fat_|relation|does not exist|PGRST205/i.test(msg) ? 'as tabelas ainda não existem — rode o SQL "atendimento_faturado_setup.sql" no Supabase.' : msg), 'error');
+  }
+});
+const afConfirmarCir = _guardAsync('afConfirmarCir', async function () {
+  const res = _afImp.cir; if (!res || !res.rows.length || !empresaGlobal) return;
+  if (!confirm(`Importar ${res.v.validas.toLocaleString('pt-BR')} procedimento(s) de ${res.atendimentos.length.toLocaleString('pt-BR')} atendimento(s)?\nAs cirurgias já gravadas desses atendimentos serão substituídas.`)) return;
+  const btn = _afEl('af-btn-cir'); btn.disabled = true;
+  try {
+    const lote = 'L' + Date.now();
+    _afStatus('Removendo cirurgias anteriores desses atendimentos…');
+    for (const par of _afChunk(res.atendimentos, 150)) await _ocDelWhere('atend_fat_cirurgias', `empresa_id=eq.${empresaGlobal}&nr_atendimento=${_afIn(par)}`);
+    const linhas = res.rows.map(r => ({ ...r, empresa_id: empresaGlobal, lote_id: lote, criado_em: Date.now(), criado_por: _currentUserEmail() }));
+    for (let i = 0; i < linhas.length; i += 2000) {
+      _afStatus(`Gravando cirurgias… ${Math.min(i + 2000, linhas.length).toLocaleString('pt-BR')} de ${linhas.length.toLocaleString('pt-BR')}`);
+      await _ocPostMany('atend_fat_cirurgias', linhas.slice(i, i + 2000));
+    }
+    const r = await _afRecalcular(res.atendimentos, (f, t) => _afStatus(`Calculando resumo por atendimento… ${f.toLocaleString('pt-BR')} de ${t.toLocaleString('pt-BR')}`));
+    _afStatus('');
+    _afImp.cir = null; _afEl('af-prev-cir').innerHTML = `<div style="color:#3f7d5e;font-size:13px;">✅ ${linhas.length.toLocaleString('pt-BR')} linha(s) de cirurgia importadas; resumo atualizado em ${(r.feitos - r.semItens).toLocaleString('pt-BR')} atendimento(s)${r.semItens ? ` (${r.semItens} ainda sem itens faturados)` : ''}.</div>`;
+    toast('Centro cirúrgico importado!', 'success');
+  } catch (e) {
+    _afStatus(''); btn.disabled = false;
+    const msg = String(e.message || e);
+    toast('Erro na importação: ' + (/atend_fat_|relation|does not exist|PGRST205/i.test(msg) ? 'as tabelas ainda não existem — rode o SQL "atendimento_faturado_setup.sql" no Supabase.' : msg), 'error');
+  }
+});
+
+// Recalcula o resumo de todos os atendimentos da lista carregada (ex.: depois de mudar o setup de sala)
+const afRecalcularLista = _guardAsync('afRecalcularLista', async function () {
+  if (!_afDados.length) { toast('Carregue a lista primeiro.', 'error'); return; }
+  if (!confirm(`Recalcular o resumo de ${_afDados.length.toLocaleString('pt-BR')} atendimento(s) da lista? (usa o setup de sala de ${_afParams().setup} min)`)) return;
+  try {
+    const r = await _afRecalcular(_afDados.map(x => x.nr_atendimento), (f, t) => _afStatus(`Recalculando… ${f.toLocaleString('pt-BR')} de ${t.toLocaleString('pt-BR')}`));
+    _afStatus(''); toast(`Resumo recalculado (${r.feitos.toLocaleString('pt-BR')} atendimentos).`, 'success'); afCarregar();
+  } catch (e) { _afStatus(''); toast('Erro ao recalcular: ' + (e.message || e), 'error'); }
+});
+
+// ---------------------------------------------------------------------
+// Parte 4: consulta
+// ---------------------------------------------------------------------
+function afTab(n) {
+  ['consulta', 'importar', 'modelo'].forEach(t => {
+    const p = _afEl('af-tab-' + t), b = _afEl('af-tabbtn-' + t);
+    if (p) p.style.display = (t === n ? '' : 'none');
+    if (b) b.className = 'btn' + (t === n ? ' btn-primary' : '');
+  });
+  if (n === 'consulta') afCarregar();
+}
+function afInit() {
+  if (competenciaGlobal && !_afEl('af-de').value) _afPeriodoDaCompetencia();
+  const aberta = ['consulta', 'importar', 'modelo'].find(t => _afEl('af-tab-' + t) && _afEl('af-tab-' + t).style.display !== 'none') || 'consulta';
+  afTab(aberta);
+}
+function _afPeriodoDaCompetencia() {
+  if (!competenciaGlobal) return;
+  const [a, m] = competenciaGlobal.split('-').map(Number);
+  const ult = new Date(a, m, 0).getDate();
+  _afEl('af-de').value = `${a}-${padMes(m)}-01`; _afEl('af-ate').value = `${a}-${padMes(m)}-${padMes(ult)}`;
+}
+function afUsarCompetencia() { _afPeriodoDaCompetencia(); afCarregar(); }
+let _afSeq = 0;
+async function afCarregar() {
+  const seq = ++_afSeq;
+  if (!empresaGlobal) { _afStatus('Selecione a Empresa no menu lateral.'); return; }
+  const de = _afEl('af-de').value, ate = _afEl('af-ate').value, base = _afEl('af-base').value;
+  if (!de || !ate) { _afStatus('Informe o período (De / Até).'); return; }
+  const prox = new Date(ate + 'T00:00:00'); prox.setDate(prox.getDate() + 1);
+  const fimExcl = `${prox.getFullYear()}-${padMes(prox.getMonth() + 1)}-${padMes(prox.getDate())}`;
+  _afStatus('Carregando atendimentos…');
+  try {
+    const rows = await _ftGetAll('atend_fat_resumo', `empresa_id=eq.${empresaGlobal}&${base}=gte.${de}&${base}=lt.${fimExcl}&select=*`);
+    if (seq !== _afSeq) return;
+    _afDados = rows;
+    const conv = [...new Set(rows.map(r => r.convenio).filter(Boolean))].sort(_ocCmp);
+    const sel = _afEl('af-f-conv'), atual = sel.value;
+    sel.innerHTML = '<option value="">Todos os convênios</option>' + conv.map(c => `<option value="${_labEsc(c)}">${_labEsc(c)}</option>`).join('');
+    if (atual && conv.includes(atual)) sel.value = atual;
+    _afStatus(rows.length ? '' : 'Nenhum atendimento no período. Importe o atendimento faturado na aba “Importar” (ou ajuste o período / a data-base).');
+    afRender();
+  } catch (e) {
+    if (seq !== _afSeq) return;
+    const msg = String(e.message || e);
+    _afStatus(/atend_fat_|relation|does not exist|PGRST205/i.test(msg) ? 'As tabelas ainda não existem: rode o SQL “atendimento_faturado_setup.sql” no Supabase.' : 'Erro ao carregar: ' + msg);
+    _afDados = []; afRender();
+  }
+}
+function afRender() {
+  const lim = _afLimiteH(), tipo = _afEl('af-f-tipo').value, classe = _afEl('af-f-classe').value, conv = _afEl('af-f-conv').value;
+  const q = _afNorm(_afEl('af-f-busca').value), sort = _afEl('af-f-ordem').value;
+  let v = _afDados.map(r => ({ ...r, _classe: _afClasse(r, lim) }));
+  if (tipo) v = v.filter(r => r.tipo_atend === tipo);
+  if (classe) v = v.filter(r => r._classe === classe);
+  if (conv) v = v.filter(r => r.convenio === conv);
+  if (q) v = v.filter(r => _afNorm([r.nr_atendimento, r.proc_principal, r.cd_proc_principal, r.cid, r.especialidade, r.medico, r.cod_paciente].join(' ')).includes(q));
+  const cmps = {
+    atend: (a, b) => _ocCmp(a.nr_atendimento, b.nr_atendimento),
+    receita: (a, b) => (b.receita_liquida || 0) - (a.receita_liquida || 0),
+    alta: (a, b) => String(b.dt_alta || '').localeCompare(String(a.dt_alta || '')),
+    internacao: (a, b) => (b.tempo_internacao_h || 0) - (a.tempo_internacao_h || 0),
+    alerta: (a, b) => ((b.n_itens_sem_cdc ? 1 : 0) + (b.n_itens_cc && !b.n_cirurgias ? 1 : 0)) - ((a.n_itens_sem_cdc ? 1 : 0) + (a.n_itens_cc && !a.n_cirurgias ? 1 : 0))
+  };
+  v.sort(cmps[sort] || cmps.atend);
+  _afVista = v;
+  const tot = v.reduce((s, r) => s + (r.receita_liquida || 0), 0);
+  const nClasse = c => v.filter(r => r._classe === c).length;
+  const semCdc = v.filter(r => r.n_itens_sem_cdc > 0).length, semCir = v.filter(r => r.n_itens_cc > 0 && !r.n_cirurgias).length;
+  const card = (l, val, sz, c) => `<div class="stat-card"><div class="s-label">${l}</div><div class="s-value" style="font-size:${sz || 20}px;${c || ''}">${val}</div></div>`;
+  _afEl('af-kpis').innerHTML =
+    card('Atendimentos', v.length.toLocaleString('pt-BR')) + card('Receita líquida', _afBRL(tot), 18) + card('Receita média / atend.', v.length ? _afBRL(tot / v.length) : '—', 18) +
+    card('Clínico', nClasse('Clínico').toLocaleString('pt-BR')) + card('Cirúrgico', nClasse('Cirúrgico').toLocaleString('pt-BR')) + card('Clínico com procedimento', nClasse('Clínico com procedimento').toLocaleString('pt-BR')) +
+    card('Com itens sem CDC', semCdc.toLocaleString('pt-BR'), 20, semCdc ? 'color:#d29922;' : '') + card('Itens de C. Cirúrgico sem cirurgia', semCir.toLocaleString('pt-BR'), 20, semCir ? 'color:#d29922;' : '');
+  const cor = { 'Clínico': '#4a7fb5', 'Cirúrgico': '#3f7d5e', 'Clínico com procedimento': '#b98a2e' };
+  const MAX = 300, corpo = v.slice(0, MAX).map(r => {
+    const alertas = [r.n_itens_sem_cdc ? `<span title="${r.n_itens_sem_cdc} item(ns) com CDC não encontrado">⚠️CDC</span>` : '', (r.n_itens_cc && !r.n_cirurgias) ? '<span title="Há itens do centro cirúrgico, mas nenhuma cirurgia importada">⚠️cirurgia</span>' : ''].filter(Boolean).join(' ');
+    return `<tr style="cursor:pointer;" onclick="afDetalhe('${_labEsc(r.nr_atendimento)}')">
+      <td><strong>${_labEsc(r.nr_atendimento)}</strong></td><td>${_labEsc(r.tipo_atend || '—')}</td>
+      <td><span style="color:${cor[r._classe]};font-weight:600;">${r._classe}</span></td>
+      <td>${_labEsc(r.convenio || '—')}</td><td>${_afFmtDt(r.dt_entrada)}</td><td>${_afFmtDt(r.dt_alta)}</td>
+      <td style="text-align:right;">${r.tempo_internacao_h === null || r.tempo_internacao_h === undefined ? '—' : _labNum(r.tempo_internacao_h / 24, 1)}</td>
+      <td>${_labEsc(r.especialidade || '—')}</td>
+      <td>${r.n_procedimentos ? _labEsc([r.cd_proc_principal, r.proc_principal].filter(Boolean).join(' — ')) + (r.n_procedimentos > 1 ? ` <span style="color:var(--text3);">(+${r.n_procedimentos - 1})</span>` : '') : '—'}</td>
+      <td style="text-align:right;">${r.n_itens}</td><td style="text-align:right;">${_afBRL(r.receita_liquida)}</td><td>${alertas}</td></tr>`;
+  }).join('');
+  _afEl('af-tabela').innerHTML = `<thead><tr><th>Atendimento</th><th>Tipo</th><th>Classificação</th><th>Convênio</th><th>Entrada</th><th>Alta</th><th style="text-align:right;">Dias</th><th>Especialidade</th><th>Procedimento principal</th><th style="text-align:right;">Itens</th><th style="text-align:right;">Receita líq.</th><th></th></tr></thead>
+    <tbody>${corpo || '<tr><td colspan="12" style="text-align:center;color:var(--text3);padding:24px;">Nenhum atendimento para os filtros escolhidos.</td></tr>'}</tbody>`;
+  _afEl('af-rodape').textContent = v.length > MAX ? `Mostrando os ${MAX} primeiros de ${v.length.toLocaleString('pt-BR')}. Use os filtros ou exporte para o Excel para ver todos.` : '';
+}
+function afExportar() {
+  if (!_afVista.length) { toast('Nada para exportar.', 'error'); return; }
+  const rows = _afVista.map(r => ({
+    'Nº Atendimento': r.nr_atendimento, 'Tipo de atendimento': r.tipo_atend || '', 'Classificação': r._classe, 'Convênio': r.convenio || '', 'Tipo de convênio': r.tipo_convenio || '',
+    'Especialidade': r.especialidade || '', 'Médico': r.medico || '', 'Cód. paciente': r.cod_paciente || '', 'Idade': r.idade, 'Sexo': r.sexo || '', 'CID': r.cid || '',
+    'Dt. entrada': _afFmtDt(r.dt_entrada), 'Dt. alta': _afFmtDt(r.dt_alta), 'Dt. ref. (faturamento)': _afFmtDt(r.dt_ref), 'Tempo de internação (h)': r.tempo_internacao_h,
+    'Nº contas': r.n_contas, 'Nº itens': r.n_itens, 'Receita bruta': r.receita_bruta, 'Desconto': r.desconto, 'Receita líquida': r.receita_liquida,
+    'Nº cirurgias': r.n_cirurgias, 'Nº procedimentos': r.n_procedimentos, 'Procedimento principal': [r.cd_proc_principal, r.proc_principal].filter(Boolean).join(' — '),
+    'Tipo de procedimento': r.tipo_procedimento || '', 'Porte principal': r.porte_principal, '1ª cirurgia': _afFmtDt(r.dt_primeira_cirurgia), 'Horas até a 1ª cirurgia': r.horas_ate_cirurgia,
+    'Tempo de sala (min, com setup)': r.tempo_sala_min, 'Tempo de procedimento (min)': r.tempo_proc_min, 'Tempo de RPA (min)': r.tempo_rpa_min,
+    'Itens sem CDC': r.n_itens_sem_cdc, 'Itens de centro cirúrgico': r.n_itens_cc
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows), wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Atendimentos');
+  XLSX.writeFile(wb, `atendimentos_faturados_${_afEl('af-de').value}_${_afEl('af-ate').value}.xlsx`);
+  toast('Excel exportado!', 'success');
+}
+
+// ---- detalhe de um atendimento ----
+async function afDetalhe(nr) {
+  const r = _afDados.find(x => x.nr_atendimento === nr); if (!r) return;
+  const corpo = _afEl('af-det-corpo'); corpo.innerHTML = '<div style="color:var(--text3);padding:20px;">Carregando…</div>';
+  _afEl('af-det-titulo').textContent = `Atendimento ${nr}`; openModal('modal-af-det');
+  try {
+    const f = `empresa_id=eq.${empresaGlobal}&nr_atendimento=eq.${encodeURIComponent(nr)}`;
+    const [itens, cirs, cdcs] = await Promise.all([_ftGetAll('atend_fat_itens', `${f}&select=*`), _ftGetAll('atend_fat_cirurgias', `${f}&select=*`), _afCarregarCdcs()]);
+    const cdcMap = {}; cdcs.forEach(c => cdcMap[c.id] = [c.codigo_cdc, c.centro_custo || c.sigla].filter(Boolean).join(' — '));
+    const classe = _afClasse(r, _afLimiteH());
+    const fato = (l, v) => `<div style="min-width:150px;"><div style="font-size:11px;color:var(--text3);">${l}</div><div style="font-size:13px;">${v}</div></div>`;
+    const porCdc = {};
+    itens.forEach(i => { const k = i.cdc_id ? (cdcMap[i.cdc_id] || i.cdc_id) : `⚠️ CDC não encontrado (${i.cdc_codigo || 'vazio'}) — ${i.centro_custo_nome || ''}`; (porCdc[k] = porCdc[k] || []).push(i); });
+    const blocos = Object.keys(porCdc).sort(_ocCmp).map(k => {
+      const ls = porCdc[k], tot = ls.reduce((s, i) => s + (Number(i.vl_item) || 0) - (Number(i.vl_desconto) || 0), 0);
+      return `<tr style="background:var(--bg3, rgba(127,127,127,.12));"><td colspan="6"><strong>${_labEsc(k)}</strong></td><td style="text-align:right;"><strong>${_afBRL(tot)}</strong></td></tr>` +
+        ls.map(i => `<tr><td>${_labEsc(i.tipo_linha || '')}</td><td>${_labEsc(i.cd_item)}</td><td>${_labEsc(i.item)}</td><td>${_labEsc(i.estrutura || '')}</td><td style="text-align:right;">${_labNum(i.qtd, 2)}</td><td style="text-align:right;">${_afFmtDt(i.dt_ref)}</td><td style="text-align:right;${Number(i.vl_item) === 0 ? 'color:#d29922;' : ''}">${_afBRL(i.vl_item)}</td></tr>`).join('');
+    }).join('');
+    const cirHtml = cirs.length ? `<table style="width:100%;margin-top:6px;"><thead><tr><th>Cirurgia</th><th>Procedimento realizado</th><th>Sala</th><th>Entrada na sala</th><th style="text-align:right;">Sala (min)</th><th style="text-align:right;">Proc. (min)</th><th style="text-align:right;">RPA (min)</th><th>Porte</th><th>Situação</th></tr></thead><tbody>` +
+      cirs.map(c => `<tr style="${c.valida === false ? 'opacity:.55;' : ''}"><td>${_labEsc(c.nr_cirurgia)}</td><td>${_labEsc([c.cd_proc_realizado, c.proc_realizado].filter(Boolean).join(' — '))}</td><td>${_labEsc(c.sala || '')}</td><td>${_afFmtDt(c.ent_sala)}</td><td style="text-align:right;">${c.tempo_sala_min == null ? '—' : _labNum(c.tempo_sala_min, 1)}</td><td style="text-align:right;">${c.tempo_proc_min == null ? '—' : _labNum(c.tempo_proc_min, 1)}</td><td style="text-align:right;">${c.tempo_rpa_min == null ? '—' : _labNum(c.tempo_rpa_min, 1)}</td><td>${_labEsc(c.ds_porte || (c.qt_porte == null ? '' : c.qt_porte))}</td><td>${c.valida === false ? 'Ignorada — ' + _labEsc(c.motivo_exc || c.status_cirurgia || '') : 'Válida'}</td></tr>`).join('') + '</tbody></table>'
+      : '<div style="color:var(--text3);font-size:12px;margin-top:6px;">Nenhuma cirurgia importada para este atendimento.</div>';
+    corpo.innerHTML = `
+      <div style="display:flex;flex-wrap:wrap;gap:14px;margin-bottom:14px;">
+        ${fato('Classificação', `<strong>${classe}</strong>`)}${fato('Tipo', _labEsc(r.tipo_atend || '—'))}${fato('Convênio', _labEsc(r.convenio || '—'))}
+        ${fato('Entrada', _afFmtDt(r.dt_entrada))}${fato('Alta', _afFmtDt(r.dt_alta))}${fato('Internação', r.tempo_internacao_h == null ? '—' : _labNum(r.tempo_internacao_h / 24, 1) + ' dia(s)')}
+        ${fato('Especialidade', _labEsc(r.especialidade || '—'))}${fato('Idade / Sexo', `${r.idade == null ? '—' : r.idade} / ${r.sexo || '—'}`)}${fato('CID', _labEsc(r.cid || '—'))}
+        ${fato('Receita líquida', `<strong>${_afBRL(r.receita_liquida)}</strong>`)}${fato('1ª cirurgia', r.dt_primeira_cirurgia ? `${_afFmtDt(r.dt_primeira_cirurgia)} (${_labNum(r.horas_ate_cirurgia, 1)} h após a entrada)` : '—')}
+        ${fato('Tempo de sala (c/ setup)', r.tempo_sala_min == null ? '—' : _labNum(r.tempo_sala_min, 1) + ' min')}
+      </div>
+      <div style="font-weight:600;margin:6px 0;">Itens por centro de custo</div>
+      <div class="table-wrap" style="max-height:340px;overflow:auto;"><table style="width:100%;"><thead><tr><th>Tipo</th><th>Cód. item</th><th>Item</th><th>Estrutura</th><th style="text-align:right;">Qtde</th><th style="text-align:right;">Dt. ref.</th><th style="text-align:right;">Receita</th></tr></thead><tbody>${blocos}</tbody></table></div>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px;">Itens em amarelo têm receita zero (não cobrados ou dentro de pacote). O custo de cada item será calculado na próxima etapa.</div>
+      <div style="font-weight:600;margin:14px 0 4px;">Cirurgias</div><div class="table-wrap">${cirHtml}</div>`;
+  } catch (e) { corpo.innerHTML = `<div style="color:var(--danger);padding:20px;">Erro ao carregar: ${_labEsc(e.message || e)}</div>`; }
+}
+
+// ---------------------------------------------------------------------
+// Parte 5: modelo de planilha
+// ---------------------------------------------------------------------
+function afBaixarModelo() {
+  const hItens = ['Tipo', 'Dt. Entrada', 'Dt. Alta', 'Estabelecimento', 'Nº Atend', 'Nº Conta', 'Dt. Ref.', 'Convênio', 'Tipo Convênio', 'Cd. Médico', 'Médico', 'Cd. Especialidade', 'Especialidade', 'Cd. Item', 'Item', 'Qt.', 'Vl. Item', 'Vl. Custo', 'Vl. Desconto', 'Vl. Original Pacote', 'Vl. Dif. Pacote', 'Vl. Desconto Conta', 'Conta Contabil', 'Cód CDC', 'Centro Custo', 'Setor Atendimento', 'Estrutura', 'Tipo Atend.', 'Cód Paciente', 'Idade', 'Sexo', 'CID'];
+  const hCir = ['NR_ATENDIMENTO', 'NR_CIRURGIA', 'DT_ENTRADA', 'DT_ALTA', 'DT_AGENDA', 'ENT_SALA_CIRU', 'SAI_SALA_CIRU', 'TEMPO_ENT_SAI_CIRUR', 'INICIO_PROCEDIMENTO', 'FIM_PROCEDIMENTO', 'TEMPO_PROCED', 'ENT_RPA', 'SAI_RPA', 'TEMPO_RPA', 'ESPECIALIDADE', 'MEDICO_CIRURGIAO', 'MEDICO_ANESTESISTA', 'DS_TP_ANESTESIA', 'CARATER_CIRURGIA', 'CD_PROCEDIMENTO_PRINC', 'CD_PROCEDIMENTO_TUSS', 'PROCEDIMENTO PRINCIPAL', 'COD_PROCEDIMENTO_REALIZADO', 'PROCEDIMENTOS REALIZADOS', 'DS_CONVENIO', 'SETOR', 'DS_AGENDA', 'DS_STATUS_CIRURGIA', 'DS_STATUS_AGENDA', 'MOTIVO_EXC', 'QT_PORTE', 'DS_PORTE', 'TIPO_PROCEDIMENTO'];
+  const ex1 = ['Proc', '27/08/2026 11:39', '22/09/2026 17:10', 'Hospital Modelo Ltda', '1000001', '2000001', '02/09/2026', 'Convênio Exemplo', 'Convênio', '123', 'Dr. Exemplo', '9', 'Cirurgia Geral', '30101280', 'Desbridamento cirúrgico', 1, 350.00, '', 0, 0, 0, 0, '', '101', 'Centro Cirúrgico', 'Centro Cirúrgico (HU)', 'Honorários Médicos', 'Internado', 'P0001', 51, 'M', 'L97'];
+  const ex2 = ['Mat/Med', '27/08/2026 11:39', '22/09/2026 17:10', 'Hospital Modelo Ltda', '1000001', '2000001', '02/09/2026', 'Convênio Exemplo', 'Convênio', '123', 'Dr. Exemplo', '9', 'Cirurgia Geral', '80000325', 'Dipirona', 2, 18.50, '', 0, 0, 0, 0, '', '101', 'Centro Cirúrgico', 'Centro Cirúrgico (HU)', 'Medicamento', 'Internado', 'P0001', 51, 'M', 'L97'];
+  const exC = ['1000001', '30166', '27/08/2026 11:39', '22/09/2026 17:10', '02/09/2026', '02/09/2026 18:35', '02/09/2026 19:51', 75.7, '02/09/2026 18:50', '02/09/2026 19:35', 45.8, '', '', '', 'Cirurgia Geral', 'Dr. Exemplo', 'Dr. Anestesista', 'Geral', 'Urgência', '30101280', '30101280', 'Desbridamento cirúrgico', '30101280', 'Desbridamento cirúrgico', 'Convênio Exemplo', 'Centro Cirúrgico (HU)', 'SALA 07', 'Realizada', 'Executada', '', 2, 'Médio', 'Cirurgia'];
+  const ler = [
+    ['MODELO DE IMPORTAÇÃO — ATENDIMENTOS FATURADOS'], [''],
+    ['Como usar'], ['1) Preencha a aba "Atendimento" (uma linha por item lançado na conta) e a aba "Centro Cirurgico" (uma linha por procedimento realizado).'],
+    ['2) Importe primeiro o Atendimento e depois o Centro Cirúrgico (tela Atendimentos Faturados → Importar). Pode ser a mesma planilha nas duas importações: o sistema acha a aba certa.'],
+    ['3) O cabeçalho pode estar em qualquer linha das 40 primeiras. Colunas extras são ignoradas; a ordem das colunas não importa.'], [''],
+    ['O que NÃO precisa vir (o sistema calcula)'], ['Vl. Resultado, % Result., datas e horas separadas, Pac-dia, Tempo de internação, Período, faixa etária, classificação clínico/cirúrgico, procedimento principal, tempo total de sala.'], [''],
+    ['Regras importantes'],
+    ['• Nº Atend é a chave que liga as duas abas. Nº Conta: um atendimento pode ter mais de uma conta.'],
+    ['• Receita zero com custo = item não cobrado (ou dentro de pacote — veja as colunas de pacote). Não precisa de marcador.'],
+    ['• Tipo Atend.: Internado, Pronto Socorro, Ambulatorial ou Externo.  Tipo Convênio: Convênio, Particular ou SUS.'],
+    ['• Cód CDC deve ser o mesmo código do cadastro de Centro de Custos da empresa. Código não encontrado = item fica sem CDC (aparece como aviso).'],
+    ['• Cód Paciente: use um código do paciente (ou hash). Não envie nome nem CPF completo.'],
+    ['• Centro Cirúrgico: linhas com MOTIVO_EXC preenchido, ou DS_STATUS_CIRURGIA diferente de "Realizada", ficam gravadas mas não entram nos cálculos.'],
+    ['• TIPO_PROCEDIMENTO (opcional): Cirurgia, Endoscopia ou Litotripsia. Se não vier, o sistema deduz pela descrição do procedimento.'],
+    ['• Datas: dd/mm/aaaa hh:mm ou data nativa do Excel.']
+  ];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ler), 'Leia-me');
+  const w1 = XLSX.utils.aoa_to_sheet([hItens, ex1, ex2]); w1['!cols'] = hItens.map(h => ({ wch: Math.max(12, h.length + 2) }));
+  XLSX.utils.book_append_sheet(wb, w1, 'Atendimento');
+  const w2 = XLSX.utils.aoa_to_sheet([hCir, exC]); w2['!cols'] = hCir.map(h => ({ wch: Math.max(14, h.length + 2) }));
+  XLSX.utils.book_append_sheet(wb, w2, 'Centro Cirurgico');
+  XLSX.writeFile(wb, 'modelo_importacao_atendimentos_faturados.xlsx');
+  toast('Modelo baixado!', 'success');
+}
+
+// =============== /BLOCO D — ATENDIMENTOS FATURADOS ===============
 </script>
 </body>
 </html>
